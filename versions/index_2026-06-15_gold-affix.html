@@ -77,15 +77,15 @@ const MUSIC=(function(){
   let state='menu', bpm=64, bpmTarget=64, targetMix=0.12;
   let nextT=0, step=0, beat=0, bar=0;
   let lowHp=false, hbNext=0, hbInt=1.0, duck=1;
-  const drone=[], pad=[], choir=[];
-  // целевые громкости слоёв по состояниям (ch = ангельский хор)
-  const MIX={ menu:{dr:.05,pad:.04,arp:0,lead:.08,kick:0,hat:0,ch:.045,lp:600},
-              calm:{dr:.06,pad:.07,arp:.04,lead:.05,kick:0,hat:0,ch:.025,lp:1100},
-              combat:{dr:.09,pad:.085,arp:.06,lead:0,kick:.07,hat:.04,ch:.05,lp:4500},
-              boss:{dr:.10,pad:.085,arp:.05,lead:.06,kick:.11,hat:.05,ch:.10,lp:6500},
-              lowhp:{dr:.045,pad:.03,arp:.03,lead:0,kick:0,hat:0,ch:.01,lp:700},
-              victory:{dr:.07,pad:.08,arp:.05,lead:.09,kick:0,hat:0,ch:.12,lp:2000},
-              gameover:{dr:.06,pad:.06,arp:0,lead:0,kick:0,hat:0,ch:.03,lp:200} };
+  const drone=[], pad=[];
+  // целевые громкости слоёв по состояниям
+  const MIX={ menu:{dr:.05,pad:.04,arp:0,lead:.08,kick:0,hat:0,lp:600},
+              calm:{dr:.06,pad:.07,arp:.04,lead:.05,kick:0,hat:0,lp:1100},
+              combat:{dr:.09,pad:.085,arp:.06,lead:0,kick:.07,hat:.04,lp:4500},
+              boss:{dr:.10,pad:.085,arp:.05,lead:.06,kick:.11,hat:.05,lp:6500},
+              lowhp:{dr:.045,pad:.03,arp:.03,lead:0,kick:0,hat:0,lp:700},
+              victory:{dr:.07,pad:.08,arp:.05,lead:.09,kick:0,hat:0,lp:2000},
+              gameover:{dr:.06,pad:.06,arp:0,lead:0,kick:0,hat:0,lp:200} };
   let curMix=MIX.menu;
   function deg(d,oct){ const i=((d%7)+7)%7, s=SCALE[i]+12*(oct+Math.floor(d/7)); return ROOT*Math.pow(2,s/12); }
   function init(){ if(started)return; started=true;
@@ -101,16 +101,6 @@ const MUSIC=(function(){
       const sub=ctx.createOscillator(); sub.type='sine'; const sg=ctx.createGain(); sg.gain.value=0; sub.connect(sg); sg.connect(bedLP); sub.start(); drone.push({o:sub,g:sg,sub:true});
       // пэд: 3 голоса (триада октавой выше)
       for(let i=0;i<3;i++){ const o=ctx.createOscillator(); o.type='triangle'; o.detune.value=(i-1)*4; const g=ctx.createGain(); g.gain.value=0; o.connect(g); g.connect(bedLP); o.start(); pad.push({o,g}); }
-      // ✦ Ангельский хор: пила → формантные bandpass («ааа») + вибрато + тяжёлый reverb-send (собор)
-      for(let i=0;i<3;i++){ const o=ctx.createOscillator(); o.type='sawtooth'; o.detune.value=(i-1)*8;
-        const bp1=ctx.createBiquadFilter(); bp1.type='bandpass'; bp1.frequency.value=700; bp1.Q.value=7;
-        const bp2=ctx.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=1150; bp2.Q.value=9;
-        const g=ctx.createGain(); g.gain.value=0; o.connect(bp1); o.connect(bp2); bp1.connect(g); bp2.connect(g);
-        g.connect(bedLP); const wg=ctx.createGain(); wg.gain.value=0.85; g.connect(wg); wg.connect(delay);
-        const vib=ctx.createOscillator(); vib.type='sine'; vib.frequency.value=4.6+i*0.4; const vg=ctx.createGain(); vg.gain.value=5; vib.connect(vg); vg.connect(o.detune); vib.start();
-        o.start(); choir.push({o,g}); }
-      // shimmer — высокий «небесный» голос (синус двумя октавами выше)
-      { const o=ctx.createOscillator(); o.type='sine'; const g=ctx.createGain(); g.gain.value=0; o.connect(g); g.connect(bedLP); const wg=ctx.createGain(); wg.gain.value=0.9; g.connect(wg); wg.connect(delay); o.start(); choir.push({o,g,shimmer:true}); }
       // пещерный бэд (тихий коричневатый шум)
       const len=ctx.sampleRate*2, b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); let last=0;
       for(let i=0;i<len;i++){ last=(last+(Math.random()*2-1)*0.02)/1.02; d[i]=last*3; }
@@ -124,13 +114,10 @@ const MUSIC=(function(){
     drone.forEach((v,i)=>{ const f=v.sub?deg(ch[0],-1):deg(ch[0],0); v.o.frequency.setTargetAtTime(f,t,0.25); });
     // пэд: триада октавой выше, плавный переход
     pad.forEach((v,i)=>{ const f=deg(ch[i%3],1); v.o.frequency.setTargetAtTime(f,t,0.3); });
-    // хор: триада 2 октавы выше (ангельский регистр), shimmer — ещё октавой выше
-    choir.forEach((v,i)=>{ const f=v.shimmer?deg(ch[0],3):deg(ch[i%3],2); v.o.frequency.setTargetAtTime(f,t,0.4); });
   }
   function applyMix(m){ if(!ctx)return; const t=ctx.currentTime, k=lowHp?MIX.lowhp:m;
     drone.forEach((v,i)=>v.g.gain.setTargetAtTime((v.sub?k.dr*0.8:k.dr)*duck,t,1.2));
     pad.forEach(v=>v.g.gain.setTargetAtTime(k.pad*duck,t,1.2));
-    choir.forEach(v=>v.g.gain.setTargetAtTime((v.shimmer?(k.ch||0)*0.6:(k.ch||0))*duck,t,1.6));   // хор вплывает медленно (эпично)
     bedLP.frequency.setTargetAtTime(k.lp,t,0.8);
     if(caveG)caveG.gain.setTargetAtTime(running&&state!=='menu'?0.012:0.004,t,1.5);
   }
@@ -581,7 +568,7 @@ const SKILL_TREES = {
     { id:'sfur3', icon:'💢', tier:2, req:'sfur2',  name:'Ярость: Охват I',   desc:'Радиус Яростного удара +30',                 apply:p=>{p.furyRadius+=30;} },
     { id:'sfur4', icon:'💢', tier:2, req:'sfur3',  name:'Ярость: Охват II',  desc:'Радиус Яростного удара +40',                 apply:p=>{p.furyRadius+=40;} },
     { id:'sfur5', icon:'💢', tier:2, req:'sfur4',  name:'Ярость: Размах',    desc:'Дуга Яростного удара шире',                  apply:p=>{p.furyArc=Math.max(p.furyArc,1.45);} },
-    { id:'sfur6', icon:'😵', tier:3, req:'sfur5',  name:'Ярость: Оглушение', desc:'Яростный удар оглушает цели на 1.5с',        apply:p=>{p.furyStun=1.5;} },
+    { id:'sfur6', icon:'😵', tier:3, req:'sfur5',  name:'Ярость: Оглушение', desc:'Яростный удар оглушает цели на 1.2с',        apply:p=>{p.furyStun=1.2;} },
     { id:'sfur7', icon:'💥', tier:3, req:'sfur6',  name:'Ярость: Ударная волна',desc:'Внешняя волна ×1.7 радиус, 50% урона',    apply:p=>{p.furyShock=1;} },
   ],
   wizard: [
@@ -1012,10 +999,10 @@ class Player {
     this.rTimer = this.c.rCd * this.rCdM; track('casts_r'); if(typeof SFX!=='undefined')SFX.play('r');
     if (this.classId === 'swordsman') {
       // Яростный удар: фронтальная дуга (апгрейды rFuryMult/furyRadius/furyArc/furyStun/furyShock)
-      enemies.forEach(e=>{const dx=e.x-this.x,dy=e.y-this.y;if(Math.hypot(dx,dy)<this.furyRadius&&Math.abs(normA(Math.atan2(dy,dx)-this.angle))<this.furyArc){const d=this._dmg(this.c.dmg*this.rFuryMult);e.hit(d,parts,'r','roll');score+=Math.floor(d);if(this.furyStun>0)e.stunT=Math.max(e.stunT||0,this.furyStun);if(this.lifesteal>0)this.heal(Math.floor(d*this.lifesteal));}});
+      enemies.forEach(e=>{const dx=e.x-this.x,dy=e.y-this.y;if(Math.hypot(dx,dy)<this.furyRadius&&Math.abs(normA(Math.atan2(dy,dx)-this.angle))<this.furyArc){const d=this._dmg(this.c.dmg*this.rFuryMult);e.hit(d,parts,'r','roll');score+=Math.floor(d);if(this.furyStun>0)e.slow=Math.max(e.slow,this.furyStun);if(this.lifesteal>0)this.heal(Math.floor(d*this.lifesteal));}});
       for(let i=0;i<22;i++){const a=this.angle+(Math.random()-.5)*1.8;parts.push(new Particle(this.x+Math.cos(a)*55,this.y+Math.sin(a)*55,Math.cos(a)*280+(Math.random()-.5)*100,Math.sin(a)*280+(Math.random()-.5)*100,'#ffcc00',0.6,3+Math.random()*2));}
       rings.push(new Ring(this.x,this.y,'#ffcc44',this.furyRadius));
-      if(this.furyShock>0){const sr=this.furyRadius*1.7;rings.push(new Ring(this.x,this.y,'#ff8800',sr));enemies.forEach(e=>{if(!e.dead&&dist(this,e)<sr){const d=this._dmg(this.c.dmg*this.rFuryMult*0.5);e.hit(d,parts,'r','roll');score+=Math.floor(d);if(this.furyStun>0)e.stunT=Math.max(e.stunT||0,this.furyStun*0.6);}});for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2;parts.push(new Particle(this.x+Math.cos(a)*sr*0.6,this.y+Math.sin(a)*sr*0.6,Math.cos(a)*160,Math.sin(a)*160,'#ff8800',0.5,3));}}
+      if(this.furyShock>0){const sr=this.furyRadius*1.7;rings.push(new Ring(this.x,this.y,'#ff8800',sr));enemies.forEach(e=>{if(!e.dead&&dist(this,e)<sr){const d=this._dmg(this.c.dmg*this.rFuryMult*0.5);e.hit(d,parts,'r','roll');score+=Math.floor(d);if(this.furyStun>0)e.slow=Math.max(e.slow,this.furyStun*0.6);}});for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2;parts.push(new Particle(this.x+Math.cos(a)*sr*0.6,this.y+Math.sin(a)*sr*0.6,Math.cos(a)*160,Math.sin(a)*160,'#ff8800',0.5,3));}}
     } else if (this.classId === 'wizard') {
       // Цепная молния: ближайшие N врагов с затуханием (апгрейды chainTargets/chainFalloff/chainDmgM/chainStun)
       const sorted=[...enemies].filter(e=>!e.dead).sort((a,b)=>dist(this,a)-dist(this,b)).slice(0,this.chainTargets);
@@ -1671,12 +1658,10 @@ canvas.addEventListener('contextmenu', e => {
 
 // ── Draw helpers ───────────────────────────────────────────────────────────
 let torchCache={};
-function drawWorldBg(B){
+function drawWorldBg(){
   // F5: рисуем только видимое окно (translate уже применён: экран (0,0) → мир (camX,camY))
-  B=B||(typeof biome==='function'?biome():{top:'#0a0c10',bot:'#0a0c10',grid:'#14161c'});
-  const grad=ctx.createLinearGradient(0,camY,0,camY+600); grad.addColorStop(0,B.top); grad.addColorStop(1,B.bot);
-  ctx.fillStyle=grad;ctx.fillRect(camX,camY,800,600);
-  ctx.strokeStyle=B.grid||'#14161c';ctx.lineWidth=1;
+  ctx.fillStyle='#0a0c10';ctx.fillRect(camX,camY,800,600);
+  ctx.strokeStyle='#14161c';ctx.lineWidth=1;
   const g=80,gx0=Math.floor(camX/g)*g,gy0=Math.floor(camY/g)*g;
   for(let x=gx0;x<=camX+800;x+=g){ctx.beginPath();ctx.moveTo(x+.5,camY);ctx.lineTo(x+.5,camY+600);ctx.stroke();}
   for(let y=gy0;y<=camY+600;y+=g){ctx.beginPath();ctx.moveTo(camX,y+.5);ctx.lineTo(camX+800,y+.5);ctx.stroke();}
@@ -1684,30 +1669,11 @@ function drawWorldBg(B){
   ctx.fillRect(0,0,worldW,20);ctx.fillRect(0,worldH-20,worldW,20);ctx.fillRect(0,0,20,worldH);ctx.fillRect(worldW-20,0,20,worldH);
   ctx.strokeStyle='#332a44';ctx.lineWidth=3;ctx.strokeRect(20,20,worldW-40,worldH-40);
 }
-// ── Биомы: палитра фона меняется по вехам/тиру (красочно + атмосферно) ──
-const BIOMES=[
-  {name:'Багровая Бездна',top:'#140810',bot:'#3a0e1a',neb:'#5a1226',grid:'rgba(255,80,90,0.05)',mote:'#ff6677'},
-  {name:'Мёртвый Лёд',    top:'#08121a',bot:'#0e2a3a',neb:'#10384f',grid:'rgba(90,200,255,0.05)',mote:'#77ddff'},
-  {name:'Гнилые Топи',    top:'#0c1408',bot:'#1c3010',neb:'#284512',grid:'rgba(150,220,80,0.05)',mote:'#aaff66'},
-  {name:'Пустота',        top:'#100818',bot:'#26103a',neb:'#3a1656',grid:'rgba(180,100,255,0.05)',mote:'#cc77ff'},
-  {name:'Пепельный Зной', top:'#160c06',bot:'#3a1c08',neb:'#522a10',grid:'rgba(255,150,60,0.05)',mote:'#ffaa44'},
-];
-function biome(){ const tier=(typeof mTier!=='undefined'&&mTier>0)?mTier:Math.floor(((typeof wave!=='undefined'?wave:1))/5); return BIOMES[Math.max(0,tier)%BIOMES.length]; }
-function bgFX(B,t){
-  for(let i=0;i<3;i++){ const nx=400+Math.cos(t*0.10+i*2.1)*260, ny=300+Math.sin(t*0.08+i*1.7)*170, nr=180+i*45; const rg=ctx.createRadialGradient(nx,ny,0,nx,ny,nr); rg.addColorStop(0,B.neb); rg.addColorStop(1,'rgba(0,0,0,0)'); ctx.globalAlpha=0.38; ctx.fillStyle=rg; ctx.beginPath();ctx.arc(nx,ny,nr,0,Math.PI*2);ctx.fill(); }
-  ctx.globalAlpha=1;
-  for(let i=0;i<28;i++){ const sx=(i*137.5)%800, sy=(i*91.3+t*9)%600, a=(Math.sin(t*1.5+i*1.3)*0.5+0.5)*0.5; ctx.globalAlpha=a; ctx.fillStyle=B.mote; ctx.fillRect(sx,sy,2,2); }
-  ctx.globalAlpha=1;
-}
 function drawBg(){
-  const B=biome(), t=torchT;
-  if(gameMode==='openworld'){drawWorldBg(B);return;}
-  const grad=ctx.createLinearGradient(0,0,0,600); grad.addColorStop(0,B.top); grad.addColorStop(1,B.bot);
-  ctx.fillStyle=grad; ctx.fillRect(0,0,800,600);
-  bgFX(B,t);
-  ctx.strokeStyle=B.grid;ctx.lineWidth=1;
-  for(let x=40;x<800;x+=40){ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,600);ctx.stroke();}
-  for(let y=40;y<600;y+=40){ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(800,y+.5);ctx.stroke();}
+  if(gameMode==='openworld'){drawWorldBg();return;}
+  ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,800,600);
+  ctx.strokeStyle='#181820';ctx.lineWidth=1;
+  for(let x=0;x<800;x+=40)for(let y=0;y<600;y+=40){ctx.strokeRect(x+.5,y+.5,40,40);if((Math.floor(x/40)+Math.floor(y/40))%3===0){ctx.fillStyle='rgba(255,255,255,0.012)';ctx.fillRect(x+1,y+1,38,38);}}
   ctx.fillStyle='#1e1a28';ctx.fillRect(0,0,800,20);ctx.fillRect(0,580,800,20);ctx.fillRect(0,20,20,560);ctx.fillRect(780,20,20,560);
   ctx.strokeStyle='#332a44';ctx.lineWidth=2;ctx.strokeRect(20,20,760,560);
   [[50,40],[750,40],[50,560],[750,560]].forEach(([x,y])=>drawTorch(x,y));
@@ -2108,7 +2074,6 @@ function gameDraw(){
   bladeWaves.forEach(bw=>bw.draw());projs.forEach(p=>p.draw());parts.forEach(p=>p.draw());
   enemies.forEach(e=>e.draw());player.draw();floats.forEach(f=>f.draw());
   ctx.restore();
-  { const vg=ctx.createRadialGradient(400,300,170,400,300,480); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,gameMode==='openworld'?'rgba(0,0,0,0.30)':'rgba(0,0,0,0.40)'); ctx.fillStyle=vg; ctx.fillRect(0,0,800,600); }   // виньетка (глубина/фокус)
   drawHUD();
   if(typeof TOUCH!=='undefined'&&TOUCH.active)drawTouchUI();
   if(gameMode==='dungeon'&&dungeonFade>0){ctx.fillStyle=`rgba(0,0,0,${dungeonFade})`;ctx.fillRect(0,0,800,600);}
