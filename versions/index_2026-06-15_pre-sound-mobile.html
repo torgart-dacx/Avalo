@@ -13,7 +13,7 @@ canvas { display: block; border: 2px solid #2a2535; box-shadow: 0 0 40px rgba(10
 </head>
 <body>
 <canvas id="c" width="800" height="600"></canvas>
-<div id="ctrl">WASD — движение &nbsp;|&nbsp; ЛКМ — атака &nbsp;|&nbsp; Q / E / R — умения &nbsp;|&nbsp; X — X-способность (Lv10) &nbsp;|&nbsp; P — пауза &nbsp;|&nbsp; M — звук &nbsp;|&nbsp; 📱 тач: левый стик — движение, правый — прицел/огонь, кнопки умений справа</div>
+<div id="ctrl">WASD — движение &nbsp;|&nbsp; ЛКМ — атака &nbsp;|&nbsp; Q / E / R — умения &nbsp;|&nbsp; X — X-способность (Lv10) &nbsp;|&nbsp; P — пауза</div>
 <script>
 'use strict';
 const canvas = document.getElementById('c');
@@ -23,65 +23,12 @@ const ctx = canvas.getContext('2d');
 const keys = {};
 const mouse = { x: 400, y: 300, down: false, clicked: false };
 canvas.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouse.x = (e.clientX - r.left)*(canvas.width/r.width); mouse.y = (e.clientY - r.top)*(canvas.height/r.height); });
-canvas.addEventListener('mousedown', () => { if(typeof SFX!=='undefined')SFX.ensure(); mouse.down = true; mouse.clicked = true; });
+canvas.addEventListener('mousedown', () => { mouse.down = true; mouse.clicked = true; });
 canvas.addEventListener('mouseup', () => { mouse.down = false; });
-document.addEventListener('keydown', e => { if(typeof SFX!=='undefined')SFX.ensure(); keys[e.key.toLowerCase()] = true; if ('pP'.includes(e.key) || e.key === 'Escape') togglePause(); if((e.key==='i'||e.key==='I'||e.key==='ш'||e.key==='Ш')&&state==='play')showInv=!showInv;
-  if(e.key==='m'||e.key==='M'||e.key==='ь'||e.key==='Ь'){ if(typeof SFX!=='undefined')SFX.toggle(); }
+document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if ('pP'.includes(e.key) || e.key === 'Escape') togglePause(); if((e.key==='i'||e.key==='I'||e.key==='ш'||e.key==='Ш')&&state==='play')showInv=!showInv;
   if(DEV&&state==='play'){ if(e.key==='-')devXp=Math.max(2,devXp-2); else if(e.key==='=')devXp+=2; else if(e.key==='[')devDrop=Math.max(1,devDrop-1); else if(e.key===']')devDrop+=1; XP_RATE=devXp; }
   e.preventDefault(); });
 document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-// ── Звук (Web Audio, синтез, негромкий; без ассетов) ─────────────────────────
-const SFX = (function(){
-  let ctx=null, master=null, comp=null, enabled=true, started=false; const last={};
-  function init(){ if(started)return; started=true; try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return; ctx=new AC(); comp=ctx.createDynamicsCompressor(); master=ctx.createGain(); master.gain.value=0.4; comp.connect(master); master.connect(ctx.destination); enabled=!(typeof meta!=='undefined'&&meta&&meta.muted); }catch(e){ ctx=null; } }
-  function resume(){ if(ctx&&ctx.state==='suspended')ctx.resume(); }
-  function gate(k,ms){ const n=(typeof performance!=='undefined')?performance.now():Date.now(); if(last[k]&&n-last[k]<ms)return false; last[k]=n; return true; }
-  function env(node,t,vol,dur){ const g=ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); node.connect(g); g.connect(comp); }
-  function tone(type,f1,f2,vol,dur,lp){ if(!ctx||!enabled)return; const t=ctx.currentTime; const o=ctx.createOscillator(); o.type=type; o.frequency.setValueAtTime(f1,t); if(f2!=null)o.frequency.exponentialRampToValueAtTime(Math.max(1,f2),t+dur); let n=o; if(lp){const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;o.connect(f);n=f;} env(n,t,vol,dur); o.start(t); o.stop(t+dur+0.03); }
-  function noise(vol,dur,lp){ if(!ctx||!enabled)return; const t=ctx.currentTime,len=Math.max(1,Math.floor(ctx.sampleRate*dur)); const b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0); for(let i=0;i<len;i++)d[i]=Math.random()*2-1; const s=ctx.createBufferSource(); s.buffer=b; const f=ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=lp||1000; s.connect(f); env(f,t,vol,dur); s.start(t); s.stop(t+dur+0.02); }
-  function chord(fs,vol,dur){ fs.forEach((f,i)=>setTimeout(()=>tone('sine',f,f,vol,dur,4000),i*70)); }
-  const map={
-    swing:()=>{ if(gate('swing',55))noise(0.04,0.09,1500); },
-    shot:()=>{ if(gate('shot',40))tone('sine',680,300,0.04,0.08,3000); },
-    hit:()=>{ if(gate('hit',45))noise(0.03,0.05,1000); },
-    crit:()=>{ if(gate('crit',55))tone('triangle',880,1300,0.055,0.13,5000); },
-    enemyDie:()=>{ if(gate('die',55))tone('triangle',240,90,0.05,0.13,2000); },
-    hurt:()=>{ if(gate('hurt',110))tone('sine',200,90,0.09,0.18,1200); },
-    q:()=>tone('triangle',520,760,0.055,0.16,3500),
-    e:()=>tone('sine',440,660,0.055,0.18,3000),
-    r:()=>tone('sawtooth',180,520,0.04,0.22,1400),
-    x:()=>{ tone('sine',150,90,0.07,0.34,800); noise(0.045,0.24,520); },
-    levelup:()=>chord([523,659,784,1047],0.055,0.3),
-    pickup:()=>tone('triangle',880,1320,0.045,0.1,4000),
-    gold:()=>{ if(gate('gold',60))tone('square',1200,1600,0.028,0.07,5000); },
-    wave:()=>chord([392,494,587],0.05,0.25),
-    boss:()=>{ tone('sawtooth',110,70,0.07,0.6,600); tone('sine',55,42,0.06,0.7,300); },
-    explosion:()=>{ if(gate('expl',55)){ noise(0.065,0.22,700); tone('sine',120,50,0.055,0.25,400); } },
-    ui:()=>{ if(gate('ui',40))tone('sine',520,520,0.04,0.05,3000); }
-  };
-  return { init, resume, ensure(){ init(); resume(); }, play(n){ if(!enabled||!ctx)return; const f=map[n]; if(f)f(); },
-    toggle(){ enabled=!enabled; if(typeof meta!=='undefined'&&meta){ meta.muted=!enabled; if(typeof saveSave==='function')saveSave(); } if(enabled)resume(); return enabled; }, isOn(){ return enabled; } };
-})();
-
-// ── Мобильное управление (тач): джойстик движения + прицел/огонь + кнопки умений ──
-const TOUCH = { enabled:(('ontouchstart' in window)||(navigator.maxTouchPoints>0)), active:false, idMap:{},
-  move:{active:false,ox:0,oy:0,nx:0,ny:0,mag:0}, aim:{active:false,ox:0,oy:0,nx:0,ny:0,mag:0,fire:false}, btn:{q:false,e:false,r:false,x:false} };
-const TOUCH_BTN={ r:{x:700,y:462,rad:27,col:'#cc3399'}, q:{x:756,y:432,rad:27,col:'#3399ff'}, e:{x:756,y:492,rad:27,col:'#33cccc'}, x:{x:700,y:522,rad:31,col:'#aa44ff'} };
-function _txy(t){ const r=canvas.getBoundingClientRect(); return { x:(t.clientX-r.left)*(canvas.width/r.width), y:(t.clientY-r.top)*(canvas.height/r.height) }; }
-function _abilAt(x,y){ for(const k in TOUCH_BTN){ const b=TOUCH_BTN[k]; if(Math.hypot(x-b.x,y-b.y)<=b.rad+8) return k; } return null; }
-function _joy(j,p){ const R=58; let vx=p.x-j.ox, vy=p.y-j.oy, m=Math.hypot(vx,vy); if(m>R){ vx=vx/m*R; vy=vy/m*R; m=R; } j.nx=vx/R; j.ny=vy/R; j.mag=m/R; }
-canvas.addEventListener('touchstart', e=>{ if(typeof SFX!=='undefined')SFX.ensure(); TOUCH.active=true;
-  if(state!=='play'){ const p=_txy(e.changedTouches[0]); mouse.x=p.x; mouse.y=p.y; return; }   // в меню — пусть сработает синтетический click
-  for(const t of e.changedTouches){ const p=_txy(t); const ab=_abilAt(p.x,p.y);
-    if(ab){ TOUCH.btn[ab]=true; TOUCH.idMap[t.identifier]=ab; }
-    else if(p.x<400){ TOUCH.move.active=true; TOUCH.move.ox=p.x; TOUCH.move.oy=p.y; _joy(TOUCH.move,p); TOUCH.idMap[t.identifier]='move'; }
-    else { TOUCH.aim.active=true; TOUCH.aim.ox=p.x; TOUCH.aim.oy=p.y; _joy(TOUCH.aim,p); TOUCH.aim.fire=true; TOUCH.idMap[t.identifier]='aim'; } }
-  e.preventDefault(); }, {passive:false});
-canvas.addEventListener('touchmove', e=>{ if(state!=='play')return; for(const t of e.changedTouches){ const role=TOUCH.idMap[t.identifier]; if(!role)continue; const p=_txy(t); if(role==='move')_joy(TOUCH.move,p); else if(role==='aim'){ _joy(TOUCH.aim,p); TOUCH.aim.fire=TOUCH.aim.mag>0.25; } } e.preventDefault(); }, {passive:false});
-function _touchEnd(e){ for(const t of e.changedTouches){ const role=TOUCH.idMap[t.identifier]; if(!role)continue; if(role==='move'){ TOUCH.move.active=false; TOUCH.move.nx=TOUCH.move.ny=TOUCH.move.mag=0; } else if(role==='aim'){ TOUCH.aim.active=false; TOUCH.aim.fire=false; TOUCH.aim.nx=TOUCH.aim.ny=TOUCH.aim.mag=0; } else TOUCH.btn[role]=false; delete TOUCH.idMap[t.identifier]; } }
-canvas.addEventListener('touchend', e=>{ _touchEnd(e); if(state==='play')e.preventDefault(); }, {passive:false});
-canvas.addEventListener('touchcancel', _touchEnd);
 
 // ── Util ───────────────────────────────────────────────────────────────────
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -381,7 +328,7 @@ function pickupDrop(p,it){ track('items_picked'); const cur=p.equipped[it.slot];
   if(!cur||it.score>cur.score){ equipItem(p,it); lootToast(it,true); } else lootToast(it,false); }
 function lootToast(it,equipped){ achToasts.push({txt:itemName(it),perk:equipped?'✓ экипировано':'хуже текущего',t:3.0,col:RARITY[it.rarity].col}); if(achToasts.length>5)achToasts.shift(); }
 // ── Идея 3: золото / стэш / кузница ──
-function addGold(n,x,y){ if(!meta)return; n=Math.round(n*(DEV?3:1)); meta.gold=(meta.gold||0)+n; if(typeof SFX!=='undefined')SFX.play('gold');
+function addGold(n,x,y){ if(!meta)return; n=Math.round(n*(DEV?3:1)); meta.gold=(meta.gold||0)+n;
   if(typeof FloatText!=='undefined'&&typeof floats!=='undefined'){ const fx=(x==null&&player)?player.x:x, fy=(y==null&&player)?player.y-44:y; if(fx!=null)floats.push(new FloatText(fx,fy,'+'+n+' 🪙','#ffd24a',13)); } }
 function addToStash(it){ if(!meta)return; if(meta.stash.length>=24){ let li=0; for(let i=1;i<meta.stash.length;i++) if((meta.stash[i].score||0)<(meta.stash[li].score||0)) li=i; if((it.score||0)>(meta.stash[li].score||0)) meta.stash[li]=it; } else meta.stash.push(it); }
 function endRunLoot(){ if(!player||!meta)return; const eq=Object.values(meta.equipped); for(const sk in player.equipped){ const it=player.equipped[sk]; if(it&&!eq.includes(it)&&!meta.stash.includes(it)) addToStash(it); } }
@@ -745,17 +692,13 @@ class Player {
     if(keys['s']||keys['arrowdown'])  dy+=1;
     if(keys['a']||keys['arrowleft'])  dx-=1;
     if(keys['d']||keys['arrowright']) dx+=1;
-    let len=Math.hypot(dx,dy); if(len>0){dx/=len;dy/=len;}
-    if(typeof TOUCH!=='undefined'&&TOUCH.active&&TOUCH.move.active){ dx=TOUCH.move.nx; dy=TOUCH.move.ny; len=Math.hypot(dx,dy); }   // мобильный стик движения (аналоговый)
+    const len=Math.hypot(dx,dy); if(len>0){dx/=len;dy/=len;}
     if(this.chillT>0)this.chillT-=dt; if(this.stunT>0)this.stunT-=dt;
     const espd=this.stunT>0?0:(this.chillT>0?this.spd*0.5:this.spd);   // стан (Голем-Владыка) / заморозка (Ледяной Владыка)
     this.x=clamp(this.x+dx*espd*dt, this.r+20, worldW-20-this.r);
     this.y=clamp(this.y+dy*espd*dt, this.r+20, worldH-20-this.r);
     if(len>0)track('distance_traveled',espd*dt);
-    if(typeof TOUCH!=='undefined'&&TOUCH.active){
-      if(TOUCH.aim.active&&TOUCH.aim.mag>0.001){ this.angle=Math.atan2(TOUCH.aim.ny,TOUCH.aim.nx); }   // ручной прицел правым стиком
-      else { let bt=null,bd=1e9; for(const en of enemies){ if(en.dead)continue; const dd=dist(this,en); if(dd<bd){bd=dd;bt=en;} } if(bt)this.angle=Math.atan2(bt.y-this.y,bt.x-this.x); }   // авто-прицел на ближайшего
-    } else { this.angle=Math.atan2((mouse.y+camY)-this.y, (mouse.x+camX)-this.x); }  // F5: мышь в мировых координатах
+    this.angle=Math.atan2((mouse.y+camY)-this.y, (mouse.x+camX)-this.x);  // F5: мышь в мировых координатах
     if(this.atkTimer>0)this.atkTimer-=dt; if(this.qTimer>0)this.qTimer-=dt;
     if(this.eTimer>0)this.eTimer-=dt; if(this.rTimer>0)this.rTimer-=dt; if(this.invTimer>0)this.invTimer-=dt;
     if(this.xTimer>0)this.xTimer-=dt;
@@ -778,7 +721,7 @@ class Player {
 
     if (this.classId === 'swordsman') {
       const swingDir=this.swingDir; this.swingDir*=-1; this.swingArcDir=swingDir;
-      this.swingTimer=0.28; this.swingBase=this.angle; if(typeof SFX!=='undefined')SFX.play('swing');
+      this.swingTimer=0.28; this.swingBase=this.angle;
       if (this.bladeFury) { this.furyCount++; }
       const furyHit = this.bladeFury && this.furyCount % this.furyThreshold === 0;
       enemies.forEach(e => {
@@ -814,7 +757,6 @@ class Player {
       }
       pr.isCrit=isCrit; if(isCrit)track('crit_hits'); if(this.classId==='archer'){if(this.homing)pr.homing=true;if(this.bouncy)pr.bouncy=true;else pr.sticky=true;} projs.push(pr);
     };
-    if(typeof SFX!=='undefined')SFX.play('shot');
     for(let b=0;b<this.burstCount;b++){const ba=this.burstCount>1?this.angle+(b-(this.burstCount-1)/2)*0.09:this.angle;fire(ba);}
     for(let i=0;i<this.extraShots;i++) fire(this.angle+(i%2===0?1:-1)*0.22*Math.ceil((i+1)/2));
     this.passiveCounter++;if(this.passiveCounter%3===0){this.passiveGlow=0.4;this.triggerPassive(projs,parts);}
@@ -822,7 +764,7 @@ class Player {
 
   qAbility(projs, parts) {
     if (this.qTimer > 0 || this.level < 2) return;
-    this.qTimer = this.c.qCd * this.qCdM; track('casts_q'); if(typeof SFX!=='undefined')SFX.play('q');
+    this.qTimer = this.c.qCd * this.qCdM; track('casts_q');
     if (this.classId === 'swordsman') {
       bladeWaves.push(new BladeWave(this.x,this.y,this.angle,this._dmg(this.c.dmg*this.waveQMult*this.bladeWaveDM),this.bladeWaveR));
       if(this.dualWave)bladeWaves.push(new BladeWave(this.x,this.y,this.angle+0.28,this._dmg(this.c.dmg*(this.waveQMult*0.72)*this.bladeWaveDM),this.bladeWaveR));
@@ -841,7 +783,7 @@ class Player {
 
   eAbility(projs, parts) {
     if (this.eTimer > 0 || this.level < 5) return;
-    this.eTimer = this.c.eCd * this.eCdM; track('casts_e'); if(typeof SFX!=='undefined')SFX.play('e');
+    this.eTimer = this.c.eCd * this.eCdM; track('casts_e');
 
     if (this.classId === 'swordsman') {
       // Charge: dash + damage
@@ -870,7 +812,7 @@ class Player {
 
   rAbility(projs, parts) {
     if (this.rTimer > 0) return;
-    this.rTimer = this.c.rCd * this.rCdM; track('casts_r'); if(typeof SFX!=='undefined')SFX.play('r');
+    this.rTimer = this.c.rCd * this.rCdM; track('casts_r');
     if (this.classId === 'swordsman') {
       // Яростный удар: фронтальная дуга (апгрейды rFuryMult/furyRadius/furyArc/furyStun/furyShock)
       enemies.forEach(e=>{const dx=e.x-this.x,dy=e.y-this.y;if(Math.hypot(dx,dy)<this.furyRadius&&Math.abs(normA(Math.atan2(dy,dx)-this.angle))<this.furyArc){const d=this._dmg(this.c.dmg*this.rFuryMult);e.hit(d,parts,'r','roll');score+=Math.floor(d);if(this.furyStun>0)e.slow=Math.max(e.slow,this.furyStun);if(this.lifesteal>0)this.heal(Math.floor(d*this.lifesteal));}});
@@ -892,7 +834,7 @@ class Player {
 
   xAbility(projs, parts) {
     if(this.xTimer>0||this.level<10) return;
-    this.xTimer=this.c.xCd*this.xCdM; track('casts_x'); if(typeof SFX!=='undefined')SFX.play('x');
+    this.xTimer=this.c.xCd*this.xCdM; track('casts_x');
     if(this.classId==='swordsman'){
       this.shieldMax=Math.floor(this.maxHp*this.shieldPct); this.shieldHp=this.shieldMax; this.shieldTimer=8;
       rings.push(new Ring(this.x,this.y,'#4488ff',65)); rings.push(new Ring(this.x,this.y,'#88aaff',50));
@@ -954,7 +896,7 @@ class Player {
       return;
     }
     this.hp=Math.max(0,this.hp-dmg); this.invTimer=0.5*(1+this.invMult);
-    if(typeof floats!=='undefined')floats.push(new FloatText(this.x,this.y-22,'-'+Math.round(dmg),'#ff5555',14)); addShake(5); if(typeof SFX!=='undefined')SFX.play('hurt');
+    if(typeof floats!=='undefined')floats.push(new FloatText(this.x,this.y-22,'-'+Math.round(dmg),'#ff5555',14)); addShake(5);
     if(runStats){runStats.killsSinceDmg=0;runStats.dmgThisWave=true;}
     if(this.hp<=0) this.dead=true;
   }
@@ -1069,13 +1011,11 @@ class Enemy {
     this.hp-=dmg; this.flash=0.14;
     track('total_dmg_dealt', Math.floor(dmg)); if(typeof runStats!=='undefined'&&runStats)runStats.dmg=(runStats.dmg||0)+Math.floor(dmg);
     if(typeof floats!=='undefined' && (src==='q'||src==='e'||src==='r'||src==='x'||src==='passive'||isCrit)){ floats.push(new FloatText(this.x+(Math.random()-.5)*10,this.y-12,(isCrit?'✦':'')+Math.round(dmg),isCrit?'#ffffff':'#ffd060',isCrit?16:11)); }   // #2: цифры урона умений (+крит)
-    if(typeof SFX!=='undefined'){ if(isCrit)SFX.play('crit'); else SFX.play('hit'); }
     for(let i=0;i<5;i++) parts.push(new Particle(this.x,this.y,(Math.random()-.5)*180,(Math.random()-.5)*180,'#ffaaaa',0.35,2));
     if(this.hp<=0){this.hp=0;this.dead=true;for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,s=110+Math.random()*160;parts.push(new Particle(this.x,this.y,Math.cos(a)*s,Math.sin(a)*s,this.t.color,0.8,3+Math.random()*3));}
       // Идея 1: трекинг убийства
       track('kills_total'); track('kills_'+this.typeId);
       if(typeof runStats!=='undefined'&&runStats){ runStats.kills=(runStats.kills||0)+1; if(this.t.boss)runStats.bossKills=(runStats.bossKills||0)+1; }   // #3: счётчики забега
-      if(typeof SFX!=='undefined')SFX.play('enemyDie');
       if(typeof player!=='undefined'&&player){ track('kills_as_'+player.classId); if(player.shieldHp>0)track('kills_while_shielded'); }
       if(this.slow>0) track('kills_on_frozen');
       if(this.summoned) track('summoner_minions_killed');
@@ -1307,7 +1247,7 @@ function spawnRoamer(){
 function owSpawnTick(dt){
   owThreatT+=dt;
   if(owThreatT>=22){owThreatT=0;wave++;trackMax('max_threat_ow',wave);if(wave===15)track('ow_threat_peaks');addGold(10+wave*5);announce={show:true,timer:2.2,text:`⚠ Угроза возросла (ур. ${wave})`,sub:'Врагов больше, и они сильнее'};
-    if(wave%7===0&&!enemies.some(e=>e.typeId==='golemlord')){const a=Math.random()*Math.PI*2,rd=560;const gx=clamp(player.x+Math.cos(a)*rd,40,worldW-40),gy=clamp(player.y+Math.sin(a)*rd,40,worldH-40);const gl=new Enemy('golemlord',gx,gy,1+0.08*(wave-1),Math.pow(1.032,wave-1));gl.roam=true;gl.wx=gx;gl.wy=gy;enemies.push(gl);announce={show:true,timer:2.6,text:'👑 ГОЛЕМ-ВЛАДЫКА ПРОБУДИЛСЯ',sub:'Адский главарь вышел на охоту'};if(typeof SFX!=='undefined')SFX.play('boss');}   // мега-босс на угрозе 7/14/21… (только 1 на карте)
+    if(wave%7===0&&!enemies.some(e=>e.typeId==='golemlord')){const a=Math.random()*Math.PI*2,rd=560;const gx=clamp(player.x+Math.cos(a)*rd,40,worldW-40),gy=clamp(player.y+Math.sin(a)*rd,40,worldH-40);const gl=new Enemy('golemlord',gx,gy,1+0.08*(wave-1),Math.pow(1.032,wave-1));gl.roam=true;gl.wx=gx;gl.wy=gy;enemies.push(gl);announce={show:true,timer:2.6,text:'👑 ГОЛЕМ-ВЛАДЫКА ПРОБУДИЛСЯ',sub:'Адский главарь вышел на охоту'};}   // мега-босс на угрозе 7/14/21… (только 1 на карте)
   }
   const cap=Math.min(210,42+wave*12);   // item5: ×3 монстров в открытом мире
   owSpawnT-=dt;
@@ -1356,7 +1296,7 @@ function initGame(classId){
   }
 }
 function nextWave(){
-  wave++; enemies=spawnWave(wave); wavePending=false; if(typeof SFX!=='undefined')SFX.play(wave%10===0?'boss':wave%5===0?'boss':'wave');
+  wave++; enemies=spawnWave(wave); wavePending=false;
   trackMax('max_wave_arcade',wave); if(runStats)runStats.dmgThisWave=false;
   if(wave%5===0)announce={show:true,timer:2.8,text:`⚠ ВОЛНА БОССА ${wave}!`,sub:`${enemies.length} врагов`};   // #1: анонс только на волнах-вехах 5/10/...
   for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2,s=100+Math.random()*200;parts.push(new Particle(400,300,Math.cos(a)*s,Math.sin(a)*s,'#ffcc00',1.4,4));}
@@ -1366,7 +1306,7 @@ function triggerLevelup(){
   const avail=tree.filter(u=>!player.takenSkills.has(u.id)&&(!u.req||player.takenSkills.has(u.req)));
   if(state==='levelup'){levelupQueue++;return;}
   pendingUpgrades=[...avail].sort(()=>Math.random()-.5).slice(0,3);
-  if(pendingUpgrades.length>0){ state='levelup'; if(typeof SFX!=='undefined')SFX.play('levelup'); }
+  if(pendingUpgrades.length>0) state='levelup';
 }
 function togglePause(){if(state==='play')paused=!paused;}
 
@@ -1428,7 +1368,7 @@ function drawVictory(){
 }
 
 function explodeAt(x,y,dmg,parts,r=70,slowDur=0,src='atk',stunDur=0){
-  track('explosions_triggered'); if(typeof SFX!=='undefined')SFX.play('explosion'); let _k=0;
+  track('explosions_triggered'); let _k=0;
   enemies.forEach(e=>{if(!e.dead&&dist({x,y},e)<r){e.hit(dmg,parts,src);score+=Math.floor(dmg);if(e.dead)_k++;if(slowDur>0)e.slow=Math.max(e.slow,slowDur);if(stunDur>0)e.stunT=Math.max(e.stunT||0,stunDur);}});
   if(_k>=3)track('multikills');
   for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,s=80+Math.random()*160;parts.push(new Particle(x,y,Math.cos(a)*s,Math.sin(a)*s,'#ff8800',0.7,4));}
@@ -1438,7 +1378,6 @@ function explodeAt(x,y,dmg,parts,r=70,slowDur=0,src='atk',stunDur=0){
 
 // ── Click handler — FIXED with else-if ─────────────────────────────────────
 canvas.addEventListener('click', () => {
-  if(typeof SFX!=='undefined'){ SFX.ensure(); if(state!=='play')SFX.play('ui'); }
   if (state === 'menu') {
     if(mouse.y>=355&&mouse.y<=407){
       if(mouse.x>=60&&mouse.x<=270){gameMode='arcade';state='select';}
@@ -1449,7 +1388,6 @@ canvas.addEventListener('click', () => {
     if(mouse.x>=295&&mouse.x<=505&&mouse.y>=430&&mouse.y<=470){forgeTab='craft';forgeSel=null;state='forge';}   // Идея 3: кузница
     if(mouse.x>=520&&mouse.x<=730&&mouse.y>=430&&mouse.y<=470){bestScroll=0;state='bestiary';}   // бестиарий
     if(mouse.x>=600&&mouse.x<=790&&mouse.y>=18&&mouse.y<=48){DEV=!DEV;}   // #4: тумблер dev/prod
-    if(mouse.x>=10&&mouse.x<=200&&mouse.y>=18&&mouse.y<=48){ if(typeof SFX!=='undefined'){SFX.ensure();SFX.toggle();} }   // тумблер звука
   } else if(state==='achievements'){
     if(mouse.x>=20&&mouse.x<=140&&mouse.y>=560&&mouse.y<=594){state='menu';achConfirmReset=false;}
     else if(mouse.x>=660&&mouse.x<=780&&mouse.y>=560&&mouse.y<=594){ if(achConfirmReset){resetSave();achConfirmReset=false;}else achConfirmReset=true; }
@@ -1555,23 +1493,6 @@ function btn(x,y,w,h,text,bg,border){
 }
 
 // ── HUD ────────────────────────────────────────────────────────────────────
-function drawTouchUI(){
-  ctx.save();
-  // джойстики (рисуем только активные)
-  const joy=(j,col)=>{ if(!j.active)return; ctx.globalAlpha=0.18;ctx.fillStyle=col;ctx.beginPath();ctx.arc(j.ox,j.oy,58,0,Math.PI*2);ctx.fill(); ctx.globalAlpha=0.55;ctx.beginPath();ctx.arc(j.ox+j.nx*58,j.oy+j.ny*58,24,0,Math.PI*2);ctx.fill(); ctx.globalAlpha=1; };
-  joy(TOUCH.move,'#5588ff'); joy(TOUCH.aim,'#ff8855');
-  // подсказки зон (полупрозрачно, только если ничего не зажато)
-  if(!TOUCH.move.active&&!TOUCH.aim.active){ ctx.globalAlpha=0.12;ctx.fillStyle='#8899ff';ctx.beginPath();ctx.arc(110,500,40,0,Math.PI*2);ctx.fill();ctx.globalAlpha=0.5;ctx.fillStyle='#aabbff';ctx.font='10px Segoe UI';ctx.textAlign='center';ctx.fillText('движение',110,503);ctx.globalAlpha=1; }
-  // кнопки умений
-  const cd={ q:player.qTimer/(player.c.qCd*player.qCdM), e:player.eTimer/(player.c.eCd*player.eCdM), r:player.rTimer/(player.c.rCd*player.rCdM), x:player.xTimer/(player.c.xCd*player.xCdM) };
-  const lock={ q:player.level<2, e:player.level<5, r:false, x:player.level<10 };
-  for(const k in TOUCH_BTN){ const b=TOUCH_BTN[k]; const lk=lock[k];
-    ctx.globalAlpha=lk?0.3:(TOUCH.btn[k]?0.85:0.55); ctx.fillStyle='#0a0a14'; ctx.beginPath();ctx.arc(b.x,b.y,b.rad,0,Math.PI*2);ctx.fill();
-    ctx.globalAlpha=1; ctx.strokeStyle=lk?'#555':b.col; ctx.lineWidth=2; ctx.beginPath();ctx.arc(b.x,b.y,b.rad,0,Math.PI*2);ctx.stroke();
-    const c=clamp(cd[k],0,1); if(c>0&&!lk){ ctx.strokeStyle='rgba(0,0,0,0.55)'; ctx.lineWidth=b.rad; ctx.beginPath(); ctx.arc(b.x,b.y,b.rad/2,-Math.PI/2,-Math.PI/2+c*Math.PI*2); ctx.stroke(); }
-    ctx.fillStyle=lk?'#777':b.col; ctx.font='bold 15px Segoe UI'; ctx.textAlign='center'; ctx.fillText(lk?'🔒':k.toUpperCase(), b.x, b.y+5); }
-  ctx.textAlign='left'; ctx.restore();
-}
 function drawHUD(){
   // Panel BG
   ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(18,554,375,44);
@@ -1698,7 +1619,6 @@ function drawMenu(){
   btn(295,430,210,40,'⚒ Кузница','#2e2410','#aa8844');
   btn(520,430,210,40,'📖 Бестиарий','#15232e','#4488aa');
   btn(600,18,190,30, DEV?'⚙ DEV-режим: ВКЛ':'⚙ Режим: PROD', DEV?'#3a2a10':'#1a1a26', DEV?'#ffaa33':'#445566');
-  btn(10,18,190,30, SFX.isOn()?'🔊 Звук: ВКЛ':'🔇 Звук: ВЫКЛ', SFX.isOn()?'#13241a':'#241313', SFX.isOn()?'#66bb88':'#bb6666');
   ctx.globalAlpha=1;
   ctx.fillStyle='#8888aa';ctx.font='12px Segoe UI';ctx.textAlign='center';
   ctx.fillText(`Профиль ур. ${profileLevel()}  ·  ${ACHIEVEMENTS.reduce((s,a)=>s+(((meta.ach[a.id]||{}).lvl||0)>0?1:0),0)}/75 достижений`,400,495);
@@ -1923,7 +1843,6 @@ function gameDraw(){
   enemies.forEach(e=>e.draw());player.draw();floats.forEach(f=>f.draw());
   ctx.restore();
   drawHUD();
-  if(typeof TOUCH!=='undefined'&&TOUCH.active)drawTouchUI();
   if(gameMode==='dungeon'&&dungeonFade>0){ctx.fillStyle=`rgba(0,0,0,${dungeonFade})`;ctx.fillRect(0,0,800,600);}
   if(paused){ctx.fillStyle='rgba(0,0,0,0.62)';ctx.fillRect(0,0,800,600);ctx.fillStyle='#fff';ctx.font='bold 52px Segoe UI';ctx.textAlign='center';ctx.fillText('ПАУЗА',400,285);ctx.fillStyle='#9999cc';ctx.font='18px Segoe UI';ctx.fillText('P / Escape — продолжить',400,335);ctx.textAlign='left';}
   if(showInv)drawInventory();
@@ -1941,12 +1860,11 @@ function gameUpdate(dt){
   if(gameMode==='openworld'){camX=clamp(player.x-400,0,worldW-800);camY=clamp(player.y-300,0,worldH-600);}  // F5: камера за героем
   player.update(dt);
   if(player.stunT<=0){   // оглушение Голем-Владыки блокирует атаки и способности
-    const _t=(typeof TOUCH!=='undefined'&&TOUCH.active);
-    if(mouse.clicked||mouse.down||_t) player.attack(projs,parts);   // мобайл — автоогонь
-    if(keys['q']||(_t&&TOUCH.btn.q)) player.qAbility(projs,parts);
-    if(keys['e']||(_t&&TOUCH.btn.e)) player.eAbility(projs,parts);
-    if(keys['r']||(_t&&TOUCH.btn.r)) player.rAbility(projs,parts);
-    if(keys['x']||(_t&&TOUCH.btn.x)) player.xAbility(projs,parts);
+    if(mouse.clicked||mouse.down) player.attack(projs,parts);
+    if(keys['q']) player.qAbility(projs,parts);
+    if(keys['e']) player.eAbility(projs,parts);
+    if(keys['r']) player.rAbility(projs,parts);
+    if(keys['x']) player.xAbility(projs,parts);
   }
   mouse.clicked=false;
   if(frostZones.length){ frostZones.forEach(z=>z.life-=dt); frostZones=frostZones.filter(z=>z.life>0); for(const z of frostZones){ if(dist(z,player)<z.r){ player.chillT=0.3; break; } } }
