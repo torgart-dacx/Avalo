@@ -1226,16 +1226,16 @@ const ET = {
   goblin:   {name:'Гоблин',     color:'#55cc44',hp:35, spd:128,dmg:10,r:14,xp:10, atkCd:1.0,atkR:28},
   skeleton: {name:'Скелет',     color:'#ccccaa',hp:60, spd:82, dmg:20,r:16,xp:20, atkCd:1.2,atkR:30},
   darkmage: {name:'Тёмный маг', color:'#9933cc',hp:55, spd:58, dmg:20,r:15,xp:30, atkCd:1.9,atkR:210,ranged:true},
-  troll:    {name:'Тролль',     color:'#775533',hp:1820,spd:52,dmg:30,r:30,xp:100,atkCd:1.8,atkR:44,boss:true},
+  troll:    {name:'Тролль',     color:'#775533',hp:1820,spd:52,dmg:30,r:52,xp:100,atkCd:1.8,atkR:44,boss:true},
   banshee:  {name:'Баньши',     color:'#66aaff',hp:40, spd:165,dmg:16,r:13,xp:25, atkCd:0.9,atkR:28},
   golem:    {name:'Голем',      color:'#aa8855',hp:140,spd:40, dmg:25,r:24,xp:50, atkCd:2.0,atkR:36},
   wraith:   {name:'Призрак',    color:'#cc44cc',hp:45, spd:95, dmg:18,r:14,xp:35, atkCd:1.5,atkR:200,ranged:true},
-  cursed:   {name:'Проклятый',  color:'#6622aa',hp:2800,spd:34,dmg:50,r:34,xp:300,atkCd:2.6,atkR:52},
+  cursed:   {name:'Проклятый',  color:'#6622aa',hp:2800,spd:34,dmg:50,r:40,xp:300,atkCd:2.6,atkR:52},
   // ── Боссы (идея 5) ──
-  lich:     {name:'Лич',         color:'#8844cc',hp:2200,spd:46,dmg:26,r:28,xp:380,atkCd:2.2,atkR:230,ranged:true,boss:true},   // щит-неуязвимость + призыв
-  titan:    {name:'Голем-Титан', color:'#9a8456',hp:3000,spd:34,dmg:34,r:40,xp:440,atkCd:2.0,atkR:48,boss:true},                // землетрясение + раскол
-  frostlord:{name:'Ледяной Владыка',color:'#5bc8f0',hp:2400,spd:42,dmg:24,r:32,xp:420,atkCd:2.2,atkR:240,ranged:true,boss:true},// поля заморозки + ледяная нова
-  golemlord:{name:'Голем-Владыка',color:'#cc4422',hp:11000,spd:40,dmg:36,r:46,xp:1200,atkCd:2.0,atkR:280,ranged:true,boss:true},// мега-босс: огонь/землетрясение/стан/рывок/щит
+  lich:     {name:'Лич',         color:'#8844cc',hp:2200,spd:46,dmg:26,r:50,xp:380,atkCd:2.2,atkR:230,ranged:true,boss:true},   // щит-неуязвимость + призыв
+  titan:    {name:'Голем-Титан', color:'#9a8456',hp:3000,spd:34,dmg:34,r:60,xp:440,atkCd:2.0,atkR:48,boss:true},                // землетрясение + раскол
+  frostlord:{name:'Ледяной Владыка',color:'#5bc8f0',hp:2400,spd:42,dmg:24,r:54,xp:420,atkCd:2.2,atkR:240,ranged:true,boss:true},// поля заморозки + ледяная нова
+  golemlord:{name:'Голем-Владыка',color:'#cc4422',hp:11000,spd:40,dmg:36,r:72,xp:1200,atkCd:2.0,atkR:280,ranged:true,boss:true},// мега-босс: огонь/землетрясение/стан/рывок/щит
   // ── Новые монстры с уникальными механиками ──
   charger:  {name:'Носорог',    color:'#cc7744',hp:95, spd:72, dmg:26,r:20,xp:45, atkCd:1.5,atkR:34, charger:true},   // телеграф + рывок
   splitter: {name:'Слизень',    color:'#66cc66',hp:70, spd:72, dmg:14,r:18,xp:30, atkCd:1.3,atkR:30, splitter:true},  // делится при смерти
@@ -1245,13 +1245,13 @@ const ET = {
   phantom:  {name:'Фантом',     color:'#aa66ff',hp:55, spd:90, dmg:18,r:14,xp:50, atkCd:1.7,atkR:200,ranged:true,blink:true},    // телепорт + дальний бой
   spitter:  {name:'Плеватель',  color:'#88aa44',hp:60, spd:64, dmg:15,r:16,xp:42, atkCd:1.4,atkR:240,ranged:true,spit:true},     // веер из 3 снарядов
   // ── Элиты (ХП 2400 — стеклянная пушка: меньше ХП, больше урона) ──
-  corruptknight:{name:'Осквернённый рыцарь',color:'#9990b0',hp:2400,spd:40,dmg:42,r:26,xp:300,atkCd:1.6,atkR:42,elite:true,frontshield:true},  // щит спереди — бить в спину
-  plaguebearer: {name:'Чумной носитель',     color:'#7fae3f',hp:2400,spd:52,dmg:28,r:23,xp:300,atkCd:1.6,atkR:40,elite:true,plague:true},      // ядовитые лужи + облако при смерти
-  berserker:    {name:'Берсерк',             color:'#cc4444',hp:2400,spd:58,dmg:30,r:22,xp:300,atkCd:1.2,atkR:38,elite:true,berserk:true},      // ниже ОЗ → быстрее и сильнее
-  mirror:       {name:'Зеркальный двойник',  color:'#dd66dd',hp:2400,spd:74,dmg:26,r:18,xp:300,atkCd:1.6,atkR:240,ranged:true,elite:true,mirror:true}, // стреляет в цвет героя
-  voidavatar:   {name:'Аватар Бездны',       color:'#7733aa',hp:2400,spd:48,dmg:28,r:25,xp:300,atkCd:2.0,atkR:46,elite:true,voidcaster:true},  // зона тьмы: нет лечения / урон −%
-  crystalgolem: {name:'Кристаллический голем',color:'#66ccdd',hp:2400,spd:30,dmg:38,r:28,xp:300,atkCd:2.0,atkR:42,elite:true,reflect:true},    // отражает дальний урон
-  reaper:       {name:'Жнец',                color:'#aa66cc',hp:2400,spd:64,dmg:38,r:22,xp:300,atkCd:1.8,atkR:40,elite:true,reaper:true},       // телепорт-рывок + широкий замах
+  corruptknight:{name:'Осквернённый рыцарь',color:'#9990b0',hp:2400,spd:40,dmg:42,r:34,xp:300,atkCd:1.6,atkR:42,elite:true,frontshield:true},  // щит спереди — бить в спину
+  plaguebearer: {name:'Чумной носитель',     color:'#7fae3f',hp:2400,spd:52,dmg:28,r:33,xp:300,atkCd:1.6,atkR:40,elite:true,plague:true},      // ядовитые лужи + облако при смерти
+  berserker:    {name:'Берсерк',             color:'#cc4444',hp:2400,spd:58,dmg:30,r:32,xp:300,atkCd:1.2,atkR:38,elite:true,berserk:true},      // ниже ОЗ → быстрее и сильнее
+  mirror:       {name:'Зеркальный двойник',  color:'#dd66dd',hp:2400,spd:74,dmg:26,r:30,xp:300,atkCd:1.6,atkR:240,ranged:true,elite:true,mirror:true}, // стреляет в цвет героя
+  voidavatar:   {name:'Аватар Бездны',       color:'#7733aa',hp:2400,spd:48,dmg:28,r:34,xp:300,atkCd:2.0,atkR:46,elite:true,voidcaster:true},  // зона тьмы: нет лечения / урон −%
+  crystalgolem: {name:'Кристаллический голем',color:'#66ccdd',hp:2400,spd:30,dmg:38,r:36,xp:300,atkCd:2.0,atkR:42,elite:true,reflect:true},    // отражает дальний урон
+  reaper:       {name:'Жнец',                color:'#aa66cc',hp:2400,spd:64,dmg:38,r:32,xp:300,atkCd:1.8,atkR:40,elite:true,reaper:true},       // телепорт-рывок + широкий замах
 };
 
 class Enemy {
@@ -2128,7 +2128,7 @@ function drawBestiary(){
     const role=E_ROLE[id]||'melee', tier=role==='boss'?'БОСС':role==='elite'?'ЭЛИТА':'ОБЫЧНЫЙ', tcol=role==='boss'?'#ff5544':role==='elite'?'#cc66ff':'#5ba8e0', boss=(role==='boss');
     ctx.fillStyle=boss?'rgba(46,20,20,0.9)':role==='elite'?'rgba(34,20,46,0.9)':'rgba(20,18,32,0.85)';ctx.fillRect(24,y,752,rowH-6);
     ctx.strokeStyle=boss?'#cc5544':role==='elite'?'#aa55cc':'#33304a';ctx.lineWidth=1;ctx.strokeRect(24,y,752,rowH-6);
-    const e=new Enemy(id,62,y+25,1,1); e.r=Math.min(t.r,18); e.flash=0; e.slow=0; e.dead=false; try{e.draw();}catch(_){}
+    const e=new Enemy(id,62,y+25,1,1); e.r=Math.min(t.r,20); e.flash=0; e.slow=0; e.dead=false; e.spawnT=9; e._ambT=999; try{e.draw();}catch(_){}
     ctx.textAlign='left';ctx.fillStyle=boss?'#ff9988':'#e2e2ee';ctx.font='bold 13px Segoe UI';ctx.fillText(t.name,100,y+16);
     ctx.font='bold 9px Segoe UI';const tw=ctx.measureText(tier).width+12;ctx.fillStyle=tcol;ctx.globalAlpha=0.2;ctx.fillRect(100,y+25,tw,15);ctx.globalAlpha=1;ctx.strokeStyle=tcol;ctx.lineWidth=1;ctx.strokeRect(100,y+25,tw,15);ctx.fillStyle=tcol;ctx.textAlign='center';ctx.fillText(tier,100+tw/2,y+35);ctx.textAlign='left';   // #4: класс-тег монстра
     ctx.fillStyle='#aa99cc';ctx.font='10px Segoe UI';ctx.fillText('['+g.role+']',100+tw+8,y+35);
