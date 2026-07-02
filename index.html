@@ -28,6 +28,7 @@ canvas.addEventListener('mouseup', () => { mouse.down = false; });
 document.addEventListener('keydown', e => { if(typeof SFX!=='undefined')SFX.ensure(); if(typeof MUSIC!=='undefined')MUSIC.ensure(); keys[e.key.toLowerCase()] = true; if ('pP'.includes(e.key) || e.key === 'Escape') togglePause(); if((e.key==='i'||e.key==='I'||e.key==='ш'||e.key==='Ш')&&state==='play')showInv=!showInv;
   if(e.key==='m'||e.key==='M'||e.key==='ь'||e.key==='Ь'){ if(typeof SFX!=='undefined')SFX.toggle(); }
   if(DEV&&state==='play'){ if(e.key==='-')devXp=Math.max(2,devXp-2); else if(e.key==='=')devXp+=2; else if(e.key==='[')devDrop=Math.max(1,devDrop-1); else if(e.key===']')devDrop+=1; XP_RATE=devXp; }
+  if((e.key==='k'||e.key==='K'||e.key==='л'||e.key==='Л')&&gameMode==='testroom'&&state==='play'){ state='select'; }   // 🧪 тренировка: сменить класс/архетип
   e.preventDefault(); });
 document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
@@ -2125,10 +2126,27 @@ function initGame(classId){
     for(let i=0;i<30;i++)spawnRoamer();          // стартовая россыпь монстров (×3)
     announce={show:true,timer:2.8,text:'🌍 Открытый мир Авало',sub:'Исследуй карту. Угроза растёт со временем!'};
     state='play';
+  } else if(gameMode==='testroom'){
+    // 🧪 Тренировочная комната: манекены не бьют, ур. 20 сразу, экран архетипа с порога
+    dungeonRooms=[]; wave=1;
+    player.level=20; player.maxHp+=95; player.hp=player.maxHp; player.xpNext=xpForLevel(20);   // +5 ОЗ/ур. как при честной прокачке до 20
+    for(let i=0;i<6;i++)spawnDummy();
+    announce={show:true,timer:3.2,text:'🧪 Тренировочная комната',sub:'Манекены не бьют · K — сменить класс/архетип'};
+    state='archsel';   // выбор архетипа сразу (или «остаться верным классу»)
   } else {
     dungeonRooms=[];
     nextWave(); state='play';
   }
+}
+// 🧪 манекен: обычный враг с нулевым уроном и скоростью (melee-типы, чтобы не спамили снарядами)
+function spawnDummy(){
+  const types=['goblin','skeleton','golem','troll','cursed'];
+  const t=types[Math.floor(Math.random()*types.length)];
+  let x,y,tries=0;
+  do{ x=90+Math.random()*620; y=110+Math.random()*400; tries++; }while(player&&dist({x,y},player)<140&&tries<20);
+  const e=new Enemy(t,x,y,1,1);
+  e.spd=0; e.baseSpd=0; e.dmg=0; e.baseDmg=0; e.roam=false;
+  enemies.push(e);
 }
 function nextWave(){
   wave++; enemies=spawnWave(wave); wavePending=false; if(typeof SFX!=='undefined')SFX.play(wave%5===0?'boss':'wave');
@@ -2230,6 +2248,7 @@ canvas.addEventListener('click', () => {
     if(mouse.x>=70&&mouse.x<=280&&mouse.y>=430&&mouse.y<=470){achScroll=0;achConfirmReset=false;state='achievements';}
     if(mouse.x>=295&&mouse.x<=505&&mouse.y>=430&&mouse.y<=470){forgeTab='craft';forgeSel=null;state='forge';}   // Идея 3: кузница
     if(mouse.x>=520&&mouse.x<=730&&mouse.y>=430&&mouse.y<=470){bestScroll=0;state='bestiary';}   // бестиарий
+    if(mouse.x>=270&&mouse.x<=530&&mouse.y>=510&&mouse.y<=546){gameMode='testroom';state='select';}   // 🧪 тренировочная комната
     if(mouse.x>=600&&mouse.x<=790&&mouse.y>=18&&mouse.y<=48){DEV=!DEV;}   // #4: тумблер dev/prod
     if(mouse.x>=10&&mouse.x<=200&&mouse.y>=18&&mouse.y<=48){ if(typeof SFX!=='undefined'){SFX.ensure();SFX.toggle();} }   // тумблер звука
   } else if(state==='achievements'){
@@ -2468,7 +2487,12 @@ function drawHUD(){
   ctx.fillStyle='#fff';ctx.font='bold 11px Segoe UI';ctx.textAlign='center';ctx.shadowColor='#000';ctx.shadowBlur=2;
   ctx.fillText(`Опыт  ${Math.floor(player.xp)} / ${player.xpNext}`,xbx+xbw/2,xby+13);ctx.shadowBlur=0;ctx.textAlign='left';
   // Wave / dungeon panel
-  if(gameMode==='arcade'){
+  if(gameMode==='testroom'){
+    ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(618,8,172,68);
+    ctx.fillStyle='#88dd88';ctx.font='bold 15px Segoe UI';ctx.fillText('🧪 Тренировка',628,28);
+    ctx.fillStyle='#aaccaa';ctx.font='11px Segoe UI';ctx.fillText('Манекены не бьют',628,46);
+    ctx.fillStyle='#ccddcc';ctx.font='11px Segoe UI';ctx.fillText('K — сменить класс',628,64);
+  } else if(gameMode==='arcade'){
     ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(618,8,172,68);
     ctx.fillStyle='#ffcc44';ctx.font='bold 18px Segoe UI';ctx.fillText(`Волна ${wave}`,628,28);
     ctx.fillStyle='#aaaaff';ctx.font='14px Segoe UI';ctx.fillText(`Очки: ${score}`,628,50);
@@ -2524,6 +2548,7 @@ function drawMenu(){
   btn(70,430,210,40,'🏆 Достижения','#2a2438','#7766aa');
   btn(295,430,210,40,'⚒ Кузница','#2e2410','#aa8844');
   btn(520,430,210,40,'📖 Бестиарий','#15232e','#4488aa');
+  btn(270,510,260,36,'🧪 Тренировка (тест классов)','#1d2a1d','#66aa66');
   btn(600,18,190,30, DEV?'⚙ DEV-режим: ВКЛ':'⚙ Режим: PROD', DEV?'#3a2a10':'#1a1a26', DEV?'#ffaa33':'#445566');
   btn(10,18,190,30, SFX.isOn()?'🔊 Звук: ВКЛ':'🔇 Звук: ВЫКЛ', SFX.isOn()?'#13241a':'#241313', SFX.isOn()?'#66bb88':'#bb6666');
   ctx.globalAlpha=1;
@@ -2886,6 +2911,8 @@ function gameUpdate(dt){
       if(wave%5===0)track('boss_waves_cleared');
     }
     if(wavePending){waveDelay-=dt;if(waveDelay<=0)nextWave();}
+  } else if(gameMode==='testroom'){
+    if(enemies.length<6)spawnDummy();   // 🧪 поддерживаем 6 манекенов (убитые тут же заменяются)
   } else if(gameMode==='openworld'){
     owSpawnTick(dt);
   } else if(dungeonRooms.length){
