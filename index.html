@@ -78,7 +78,7 @@ const SFX = (function(){
 
 // ── Музыка (адаптивная, процедурная Web Audio; переиспользует граф SFX; без ассетов) ──
 const MUSIC=(function(){
-  let ctx=null,comp=null,master=null,mg=null,bedLP=null,delay=null,dlp=null,dfb=null,cave=null,caveG=null,windBP=null,windG=null;
+  let ctx=null,comp=null,master=null,mg=null,bedLP=null,delay=null,dlp=null,dfb=null,cave=null,caveG=null;
   let started=false,muted=false,running=false,schedTimer=null;
   const AEO=[0,2,3,5,7,8,10], PHR=[0,1,3,5,7,8,10]; let SCALE=AEO; const ROOT=73.42;   // D2
   // прогрессии: [rootDeg, thirdDeg, fifthDeg] по тактам
@@ -90,14 +90,14 @@ const MUSIC=(function(){
   let lowHp=false, hbNext=0, hbInt=1.0, duck=1;
   const drone=[], pad=[], choir=[];
   // целевые громкости слоёв по состояниям (ch = ангельский хор)
-  // bs = бас-пульс (драйв боя), bl = колокольчики (воздух в затишье/меню)
-  const MIX={ menu:{dr:.05,pad:.04,arp:0,lead:.08,kick:0,hat:0,ch:.045,bs:0,bl:.05,lp:600},
-              calm:{dr:.06,pad:.07,arp:.04,lead:.05,kick:0,hat:0,ch:.025,bs:.02,bl:.06,lp:1100},
-              combat:{dr:.09,pad:.085,arp:.06,lead:0,kick:.07,hat:.04,ch:.06,bs:.07,bl:0,lp:4500},
-              boss:{dr:.10,pad:.085,arp:.05,lead:.06,kick:.11,hat:.05,ch:.10,bs:.09,bl:0,lp:6500},
-              lowhp:{dr:.045,pad:.03,arp:.03,lead:0,kick:0,hat:0,ch:.01,bs:0,bl:0,lp:700},
-              victory:{dr:.07,pad:.08,arp:.05,lead:.09,kick:0,hat:0,ch:.12,bs:.03,bl:.08,lp:2000},
-              gameover:{dr:.06,pad:.06,arp:0,lead:0,kick:0,hat:0,ch:.03,bs:0,bl:.02,lp:200} };
+  // bs = бас-пульс · bl = колокольчики · lu = лютня-менестрель (затишье) · rf = боевой рифф-остинато (бой)
+  const MIX={ menu:{dr:.05,pad:.04,arp:0,lead:.08,kick:0,hat:0,ch:.045,bs:0,bl:.05,lu:.06,rf:0,lp:600},
+              calm:{dr:.06,pad:.07,arp:.03,lead:.05,kick:0,hat:0,ch:.025,bs:.02,bl:.05,lu:.085,rf:0,lp:1100},
+              combat:{dr:.09,pad:.085,arp:.05,lead:0,kick:.07,hat:.04,ch:.06,bs:.07,bl:0,lu:0,rf:.075,lp:4500},
+              boss:{dr:.10,pad:.085,arp:.04,lead:.06,kick:.11,hat:.05,ch:.10,bs:.09,bl:0,lu:0,rf:.09,lp:6500},
+              lowhp:{dr:.045,pad:.03,arp:.03,lead:0,kick:0,hat:0,ch:.01,bs:0,bl:0,lu:.03,rf:0,lp:700},
+              victory:{dr:.07,pad:.08,arp:.05,lead:.09,kick:0,hat:0,ch:.12,bs:.03,bl:.07,lu:.09,rf:0,lp:2000},
+              gameover:{dr:.06,pad:.06,arp:0,lead:0,kick:0,hat:0,ch:.03,bs:0,bl:.02,lu:.03,rf:0,lp:200} };
   let curMix=MIX.menu;
   function deg(d,oct){ const i=((d%7)+7)%7, s=SCALE[i]+12*(oct+Math.floor(d/7)); return ROOT*Math.pow(2,s/12); }
   function init(){ if(started)return; started=true;
@@ -127,11 +127,6 @@ const MUSIC=(function(){
       const len=ctx.sampleRate*2, b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); let last=0;
       for(let i=0;i<len;i++){ last=(last+(Math.random()*2-1)*0.02)/1.02; d[i]=last*3; }
       cave=ctx.createBufferSource(); cave.buffer=b; cave.loop=true; const cf=ctx.createBiquadFilter(); cf.type='lowpass'; cf.frequency.value=300; caveG=ctx.createGain(); caveG.gain.value=0; cave.connect(cf); cf.connect(caveG); caveG.connect(mg); cave.start();
-      // 🌬 ветер Бездны: шумовой амбиент через bandpass с медленным LFO-«завыванием»; частота тонируется биомом (в applyMix)
-      { const wl=ctx.sampleRate*2, wb=ctx.createBuffer(1,wl,ctx.sampleRate), wd=wb.getChannelData(0); for(let i=0;i<wl;i++)wd[i]=Math.random()*2-1;
-        const ws=ctx.createBufferSource(); ws.buffer=wb; ws.loop=true; windBP=ctx.createBiquadFilter(); windBP.type='bandpass'; windBP.frequency.value=500; windBP.Q.value=2;
-        windG=ctx.createGain(); windG.gain.value=0; ws.connect(windBP); windBP.connect(windG); windG.connect(mg);
-        const lfo=ctx.createOscillator(); lfo.type='sine'; lfo.frequency.value=0.07; const lg=ctx.createGain(); lg.gain.value=220; lfo.connect(lg); lg.connect(windBP.frequency); lfo.start(); ws.start(); }
       retune(0);
     }catch(e){ ctx=null; }
   }
@@ -150,8 +145,6 @@ const MUSIC=(function(){
     choir.forEach(v=>v.g.gain.setTargetAtTime((v.shimmer?(k.ch||0)*0.6:(k.ch||0))*duck,t,1.6));   // хор вплывает медленно (эпично)
     bedLP.frequency.setTargetAtTime(k.lp,t,0.8);
     if(caveG)caveG.gain.setTargetAtTime(running&&state!=='menu'?0.012:0.004,t,1.5);
-    if(windG){ const WV={menu:.012,calm:.024,combat:.014,boss:.008,lowhp:.032,victory:.006,gameover:.026}; windG.gain.setTargetAtTime((WV[state]!=null?WV[state]:.012)*duck,t,2.0);
-      if(windBP&&typeof biome==='function'){ try{ const bi=Math.max(0,BIOMES.indexOf(biome())); windBP.frequency.setTargetAtTime(400+bi*180,t,3.0); }catch(_e){} } }   // ветер: громче в затишье/lowhp, тонируется биомом
   }
   // транзиентные голоса
   function vGain(node,t,vol,dur){ const g=ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); node.connect(g); return g; }
@@ -163,6 +156,10 @@ const MUSIC=(function(){
   function bass(hz,t,vol){ if(!ctx)return; const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=hz; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=420; o.connect(lp); const g=vGain(lp,t,vol,0.22); g.connect(mg); o.start(t); o.stop(t+0.28); }
   // колокольчик: чистый синус с длинным хвостом в дилей — «воздух» в затишье
   function bell(hz,t,vol){ if(!ctx)return; const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=hz; const g=vGain(o,t,vol,1.4); g.connect(bedLP); const wg=ctx.createGain(); wg.gain.value=0.9; g.connect(wg); wg.connect(delay); o.start(t); o.stop(t+1.5); }
+  // 🪕 лютня (менестрель, Witcher-вайб): щипок = triangle + тихая октава-обертон, тёплый lowpass, эхо-дилей
+  function lute(hz,t,vol,dur){ if(!ctx)return; dur=dur||0.7; const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=hz; const o2=ctx.createOscillator(); o2.type='sine'; o2.frequency.value=hz*2.003; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2400; lp.Q.value=0.8; o.connect(lp); const g2=ctx.createGain(); g2.gain.value=0.3; o2.connect(g2); g2.connect(lp); const g=vGain(lp,t,vol,dur); g.connect(bedLP); const wg=ctx.createGain(); wg.gain.value=0.55; g.connect(wg); wg.connect(delay); o.start(t); o.stop(t+dur+0.05); o2.start(t); o2.stop(t+dur+0.05); }
+  // 🎸 боевой щипок (Tekken-драйв): пила с резко закрывающимся фильтром — панч для остинато
+  function pluckRiff(hz,t,vol){ if(!ctx)return; const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=hz; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(2800,t); lp.frequency.exponentialRampToValueAtTime(500,t+0.12); o.connect(lp); const g=vGain(lp,t,vol,0.14); g.connect(mg); o.start(t); o.stop(t+0.2); }
   function heartbeat(t){ if(!ctx)return; [[70,0],[55,0.08]].forEach(([f,off])=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=f; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=180; o.connect(lp); const g=vGain(lp,t+off,0.05,0.16); g.connect(mg); o.start(t+off); o.stop(t+off+0.2); }); }
   const MOTIF=[{d:4,o:1,b:1},{d:0,o:1,b:1},{d:2,o:1,b:0.5},{d:1,o:1,b:0.5},{d:0,o:1,b:1},{d:6,o:0,b:1},{d:0,o:1,b:2}];
   function playMotif(t0,frag,aug){ if(!ctx)return; let t=t0; const notes=frag?MOTIF.slice(0,3):MOTIF; const mul=aug?2:1;
@@ -180,6 +177,10 @@ const MUSIC=(function(){
     if(!lowHp&&(m.bs||0)>0){ if(state==='combat'&&(s===0||s===6||s===8||s===14))bass(deg(ch[0],-1),t,m.bs); else if(state==='boss'&&s%2===0)bass(deg(ch[s%4===0?0:2],-1),t,m.bs*(s%8===0?1.2:0.85)); else if((state==='calm'||state==='victory')&&s===0)bass(deg(ch[0],-1),t,m.bs); }
     // колокольчики: редкие «небесные» ноты в затишье/меню/победе
     if((m.bl||0)>0){ if((state==='calm'||state==='menu')&&(s===4||s===12)&&Math.random()<0.4)bell(deg(ch[(s/4)%3|0],3),t,m.bl); else if(state==='victory'&&s%4===2)bell(deg(ch[(s/4)%3|0],3),t,m.bl); }
+    // 🎸 боевой рифф (Tekken-драйв): шестнадцатый остинато вокруг корня аккорда, акценты на долях
+    if(!lowHp&&(m.rf||0)>0){ const RF=[0,-1,7,0, 3,-1,4,3, 0,-1,7,0, 5,4,3,2]; const rd=RF[s]; if(rd>=0)pluckRiff(deg(ch[0]+rd,1),t,m.rf*(s%4===0?1.2:0.8)); }
+    // 🪕 менестрель (Witcher-лютня): тёплый перебор аккорда восьмыми + редкий форшлаг-украшение
+    if((m.lu||0)>0&&s%2===0&&(state==='calm'||state==='menu'||state==='victory'||state==='gameover')){ const PK=[0,2,1,2, 3,2,1,2]; const ix=PK[(s/2)|0]; const dd=ix===3?ch[0]+7:ch[ix]; lute(deg(dd,1),t,m.lu*(s===0?1.15:0.85),0.85); if(s===12&&Math.random()<0.3)lute(deg(ch[1],2),t+spb()*0.25,m.lu*0.55,0.5); }
   }
   function onBar(b){ retune(b);
     if(b===0){ if(state==='menu'||state==='victory')playMotif(nextT,false,false);
