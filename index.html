@@ -28,7 +28,17 @@ canvas.addEventListener('mouseup', () => { mouse.down = false; });
 document.addEventListener('keydown', e => { if(typeof SFX!=='undefined')SFX.ensure(); if(typeof MUSIC!=='undefined')MUSIC.ensure(); keys[e.key.toLowerCase()] = true; if ('pP'.includes(e.key) || e.key === 'Escape') togglePause(); if((e.key==='i'||e.key==='I'||e.key==='ш'||e.key==='Ш')&&state==='play')showInv=!showInv;
   if(e.key==='m'||e.key==='M'||e.key==='ь'||e.key==='Ь'){ if(typeof SFX!=='undefined')SFX.toggle(); }
   if(DEV&&state==='play'){ if(e.key==='-')devXp=Math.max(2,devXp-2); else if(e.key==='=')devXp+=2; else if(e.key==='[')devDrop=Math.max(1,devDrop-1); else if(e.key===']')devDrop+=1; XP_RATE=devXp; }
-  if((e.key==='k'||e.key==='K'||e.key==='л'||e.key==='Л')&&gameMode==='testroom'&&state==='play'){ state='select'; }   // 🧪 тренировка: сменить класс/архетип
+  if(gameMode==='testroom'&&state==='play'){   // 🧪 горячие клавиши тренировки
+    if(e.key==='k'||e.key==='K'||e.key==='л'||e.key==='Л'){ state='select'; }   // сменить класс/архетип
+    else if(e.key==='l'||e.key==='L'||e.key==='д'||e.key==='Д'){ player.level++; player.maxHp+=5; player.hp=Math.min(player.maxHp,player.hp+5); player.xpNext=xpForLevel(player.level); triggerLevelup(); }   // +1 уровень → карточка апгрейда
+    else if(e.key==='u'||e.key==='U'||e.key==='г'||e.key==='Г'){   // взять ВСЕ апгрейды разом
+      let n=0;
+      if(player.arch){ ARCH_UPGRADE_POOL.forEach(u=>{u.apply(player);n++;}); }
+      else { let av; while((av=SKILL_TREES[player.classId].filter(u=>!player.takenSkills.has(u.id)&&(!u.req||player.takenSkills.has(u.req)))).length){ av.forEach(u=>{u.apply(player);player.takenSkills.add(u.id);n++;}); } }
+      achToasts.push({txt:'🧪 Применено апгрейдов: '+n,perk:player.arch?'полный сет пула (×1)':'всё дерево класса',t:3,col:'#88dd88'}); if(achToasts.length>5)achToasts.shift();
+    }
+    else if(e.key==='Tab'){ trInfo=!trInfo; }   // инфо-панель умений
+  }
   e.preventDefault(); });
 document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
@@ -460,6 +470,7 @@ let drops=[], showInv=false, forgeTab='craft', forgeSel=null, frostZones=[], gro
 // Задача 2: зрелищность — экранная тряска и hit-stop
 let shake=0, hitStop=0;
 let dashGhosts=[], dmgFlash=0, onboardT=0;   // афтеримедж рывка · красный флэш урона · таймер подсказок
+let trInfo=true;   // 🧪 тест-комната: инфо-панель умений (Tab)
 function addShake(n){ shake=Math.min(9,shake+n); }   // кап тряски снижен (мягче камера)
 function fmtNum(n){ n=Math.round(n); return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?(n/1e3).toFixed(1)+'K':String(n); }   // компактные большие числа
 function hitStopFor(t){ if(t>hitStop)hitStop=t; }
@@ -2131,7 +2142,8 @@ function initGame(classId){
     dungeonRooms=[]; wave=1;
     player.level=20; player.maxHp+=95; player.hp=player.maxHp; player.xpNext=xpForLevel(20);   // +5 ОЗ/ур. как при честной прокачке до 20
     for(let i=0;i<6;i++)spawnDummy();
-    announce={show:true,timer:3.2,text:'🧪 Тренировочная комната',sub:'Манекены не бьют · K — сменить класс/архетип'};
+    trInfo=true;   // инфо-панель умений включена с порога
+    announce={show:true,timer:3.2,text:'🧪 Тренировочная комната',sub:'K класс · L +уровень · U все апгрейды · Tab инфо-панель'};
     state='archsel';   // выбор архетипа сразу (или «остаться верным классу»)
   } else {
     dungeonRooms=[];
@@ -2489,9 +2501,10 @@ function drawHUD(){
   // Wave / dungeon panel
   if(gameMode==='testroom'){
     ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(618,8,172,68);
-    ctx.fillStyle='#88dd88';ctx.font='bold 15px Segoe UI';ctx.fillText('🧪 Тренировка',628,28);
-    ctx.fillStyle='#aaccaa';ctx.font='11px Segoe UI';ctx.fillText('Манекены не бьют',628,46);
-    ctx.fillStyle='#ccddcc';ctx.font='11px Segoe UI';ctx.fillText('K — сменить класс',628,64);
+    ctx.fillStyle='#88dd88';ctx.font='bold 14px Segoe UI';ctx.fillText('🧪 Тренировка',628,24);
+    ctx.fillStyle='#aaccaa';ctx.font='10px Segoe UI';ctx.fillText('K класс · L +уровень',628,42);
+    ctx.fillStyle='#aaccaa';ctx.font='10px Segoe UI';ctx.fillText('U все апгрейды · Tab инфо',628,56);
+    ctx.fillStyle='#8faa8f';ctx.font='10px Segoe UI';ctx.fillText('Манекены не бьют',628,70);
   } else if(gameMode==='arcade'){
     ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(618,8,172,68);
     ctx.fillStyle='#ffcc44';ctx.font='bold 18px Segoe UI';ctx.fillText(`Волна ${wave}`,628,28);
@@ -2808,6 +2821,89 @@ function drawGameOver(){
 }
 
 // ── Game draw ──────────────────────────────────────────────────────────────
+// 🧪 Тест-комната: справочник умений (описание + множитель урона для инфо-панели).
+// Множители — те же константы, что в ARCHETYPES (менять синхронно!).
+const ARCH_INFO={
+  berserk:{lmb:{d:'Конус топором перед собой',m:1},q:{d:'AoE вокруг (r150) + 6 волн по кругу',m:2.4},e:{d:'Конус-трещина (260px) + лава-зона с DoT',m:2},r:{d:'Вихрь вокруг (r170), вампиризм ×2',m:1.6},x:{d:'Прыжок к курсору + AoE r200 + стан 1.2с',m:3.5},pas:{d:'Кровавый взрыв r110, вампиризм ×2',m:0.9}},
+  duelist:{lmb:{d:'Каскад резов, конус 95px',m:1.2},q:{d:'Рывок к курсору: AoE на входе и на выходе',m:1.8},e:{d:'6 клинков-волн во все стороны',m:1.2},r:{d:'Неуязвимость 0.5с + контр-взрыв r150',m:2.5},x:{d:'Телепорт-удары по 6 ближайшим',m:1.6},pas:{d:'2 фантомных клинка в ближайшего',m:0.9}},
+  guardian:{lmb:{d:'Удар булавой, конус перед собой',m:1},q:{d:'Таран 190px: стан 0.8с + отброс',m:1.8},e:{d:'Втягивание врагов + контр-взрыв + неуязв. 0.8с',m:1.4},r:{d:'Конус r150: отброс + стан 0.7с',m:1.5},x:{d:'Рывок через арену с лавовым следом + 2×AoE r200 + стан',m:2.5},pas:{d:'Волна r120: отброс + стан 0.3с',m:0.7}},
+  elements:{lmb:{d:'Ледяное копьё: пробитие + замедление в конусе',m:1.45},q:{d:'Метеор в точку курсора + горящая зона',m:2},e:{d:'AoE r160: замедление + поджог; по «меченым» ×2.5',m:1.3},r:{d:'Луч по линии прицела (380px) + замедление',m:1.5},x:{d:'7 метеоров огня и льда веером',m:2},pas:{d:'Чередование: огонь ×1.1 / лёд ×0.8 + slow',m:1.1}},
+  arcane:{lmb:{d:'Самонаводящийся болт',m:1.15},q:{d:'Телепорт к курсору + стан-вспышки на входе/выходе',m:1.2},e:{d:'Печать: втягивание + детонация r130',m:2},r:{d:'Чёрная дыра у курсора: втягивание + DoT 3.2с',m:0.6},x:{d:'Воронка r220 + мощный взрыв + стан 1с',m:4},pas:{d:'Мини-разлом у цели: втягивание + DoT',m:0.4}},
+  summoner:{lmb:{d:'Огненный болт',m:1.15},q:{d:'5 духов-стрелков на 9с',m:0.42},e:{d:'Дух-фамильяр на 16с',m:0.8},r:{d:'Голем-танк на 14с (ближний бой)',m:1.5},x:{d:'8 духов вокруг на 12с',m:0.85},pas:{d:'Призыв духа на 5с (кап 10 призывов)',m:0.35}},
+  sniper:{lmb:{d:'3 стрелы веером',m:1},q:{d:'Сверхбыстрая стрела, пробитие 8',m:3},e:{d:'3 самонаводящиеся гарант-крит стрелы',m:2},r:{d:'5 стрел веером с рикошетом от стен',m:2},x:{d:'Удар с неба r150 + 12 стрел во все стороны',m:3},pas:{d:'Крит-выстрел в ближайшего (крит ×2.5 учтён)',m:4}},
+  hunter:{lmb:{d:'Точный одиночный выстрел',m:1.2},q:{d:'Ядовитая зона у курсора (5с, DoT)',m:0.5},e:{d:'Капкан вокруг себя: стан 1.4с',m:0.8},r:{d:'Зверь-спутник на 15с',m:1.1},x:{d:'3 зверя + 3 ядовитые зоны',m:1.15},pas:{d:'Яд на цель + ядовитая лужа',m:0.6}},
+  whirl:{lmb:{d:'Вихрь копья: конус 95px',m:1.35},q:{d:'5 стрел в упор + отброс вблизи',m:1.5},e:{d:'Рывок-выпад 190px с уроном по пути',m:1.6},r:{d:'AoE вокруг + 6 бегущих волн',m:1.4},x:{d:'Воронка у курсора + 14 стрел + взрыв',m:2},pas:{d:'3 режущие волны вперёд',m:0.65}},
+};
+// Какие узлы дерева усиливают какой слот (для счётчиков «взято/всего»)
+const TREE_SLOT_PREFIX={
+  swordsman:{lmb:['s_whirl','s_atk'],q:['swav','s_wave'],e:[],r:['sfur'],x:['s_shield'],pas:['s_pass']},
+  wizard:{lmb:['w_pierce','w_explode','w_extra'],q:['wmet','w_mega'],e:['wfro'],r:['wchn'],x:['w_meteor'],pas:['w_pass']},
+  archer:{lmb:['a_mshot','a_crit','a_pierce','a_sniper','a_poison','a_atk'],q:['aq'],e:['ae'],r:['ar'],x:['ax'],pas:['a_pass']},
+};
+function _slotUp(p,slot){ const prefs=(TREE_SLOT_PREFIX[p.classId]||{})[slot]||[]; if(!prefs.length)return 'нет апгрейдов'; const tree=SKILL_TREES[p.classId]; let tot=0,tak=0; tree.forEach(u=>{ if(prefs.some(pf=>u.id.indexOf(pf)===0)){ tot++; if(p.takenSkills.has(u.id))tak++; } }); return 'апгрейды '+tak+'/'+tot; }
+function drawTestInfo(){
+  const p=player; if(!p)return;
+  const D=n=>Math.round(p.c.dmg*n*p.dmgM);
+  const col=p.arch?p.arch.color:p.c.color;
+  let rows;
+  if(p.arch){
+    const ai=ARCH_INFO[p.archetype]||{}, g=k=>ai[k]||{d:'',m:1};
+    rows=[
+      ['ЛКМ',p.arch.lmbName,g('lmb').d,'≈'+D(g('lmb').m),(p.c.atkCd*p.atkCdM).toFixed(2)+'с','пул апгрейдов'],
+      ['Q',p.arch.qName,g('q').d,'≈'+D(g('q').m),(p.arch.qCd*p.qCdM).toFixed(1)+'с','пул апгрейдов'],
+      ['E',p.arch.eName,g('e').d,'≈'+D(g('e').m),(p.arch.eCd*p.eCdM).toFixed(1)+'с','пул апгрейдов'],
+      ['R',p.arch.rName,g('r').d,'≈'+D(g('r').m),(p.arch.rCd*p.rCdM).toFixed(1)+'с','пул апгрейдов'],
+      ['X',p.arch.xName,g('x').d,'≈'+D(g('x').m),(p.arch.xCd*p.xCdM).toFixed(0)+'с','пул апгрейдов'],
+      ['×3',p.arch.passiveName,g('pas').d,'≈'+D(g('pas').m),'каждый 3-й удар','тиры дерева усиливают'],
+    ];
+  } else if(p.classId==='swordsman'){
+    rows=[
+      ['ЛКМ','Свинг клинка','Дуга перед собой'+(p.bladeFury?('; вихрь: каждый '+p.furyThreshold+'-й ×'+p.furyMult):''),'≈'+D(1),(p.c.atkCd*p.atkCdM).toFixed(2)+'с',_slotUp(p,'lmb')],
+      ['Q','Волна клинка','Волна вперёд, радиус '+Math.round(p.bladeWaveR)+(p.dualWave?' ×2':'')+(p.waveExtra?(' +'+p.waveExtra+' доп.'):''),'≈'+D(p.waveQMult*p.bladeWaveDM),(p.c.qCd*p.qCdM).toFixed(1)+'с',_slotUp(p,'q')],
+      ['E','Рывок','185px, неуязвимость 0.45с, урон по пути','≈'+D(1.8),(p.c.eCd*p.eCdM).toFixed(1)+'с',_slotUp(p,'e')],
+      ['R','Яростный удар','Дуга, радиус '+Math.round(p.furyRadius)+(p.furyStun?(', стан '+p.furyStun+'с'):'')+(p.furyShock?' + внешняя волна':''),'≈'+D(p.rFuryMult),(p.c.rCd*p.rCdM).toFixed(1)+'с',_slotUp(p,'r')],
+      ['X','Щит гнева','Щит '+Math.round(p.shieldPct*100)+'% ОЗ'+(p.shieldExplode?' + взрыв со станом':''),'='+Math.floor(p.maxHp*p.shieldPct)+' ОЗ',(p.c.xCd*p.xCdM).toFixed(0)+'с',_slotUp(p,'x')],
+      ['×3','Кольцо ударов','Ударные кольца вокруг героя (T'+p.passiveTier+')','≈'+D(1.1),'каждый 3-й удар',_slotUp(p,'pas')],
+    ];
+  } else if(p.classId==='wizard'){
+    rows=[
+      ['ЛКМ','Огненный болт','Снаряд'+(p.explode?' + взрыв':'')+(p.extraShots?(' +'+p.extraShots+' доп.'):''),'≈'+D(1),(p.c.atkCd*p.atkCdM).toFixed(2)+'с',_slotUp(p,'lmb')],
+      ['Q','Метеор','Взрыв радиусом '+Math.round(p.meteorR)+(p.qMeteorSlow?', заморозка':''),'≈'+D(p.qMeteorDmgM),(p.c.qCd*p.qCdM).toFixed(1)+'с',_slotUp(p,'q')],
+      ['E','Ледяная вспышка','AoE радиусом '+Math.round(p.frostR)+', замедление '+p.frostSlow+'с'+(p.frostFreeze?' (заморозка)':''),'≈'+D(p.frostDmgM*(p.frostFreeze?1.5:1)),(p.c.eCd*p.eCdM).toFixed(1)+'с',_slotUp(p,'e')],
+      ['R','Цепная молния','До '+p.chainTargets+' целей, затухание ×'+p.chainFalloff,'≈'+D(p.chainDmgM),(p.c.rCd*p.rCdM).toFixed(1)+'с',_slotUp(p,'r')],
+      ['X','Метеодождь',p.meteorCount+' метеоров в направлении прицела','≈'+D(3)+' ×'+p.meteorCount,(p.c.xCd*p.xCdM).toFixed(0)+'с',_slotUp(p,'x')],
+      ['×3','Авто-метеор','Метеор по ближайшему (T'+p.passiveTier+')','≈'+D(4.5*(p.passiveTier>=2?1.4:1)),'каждый 3-й удар',_slotUp(p,'pas')],
+    ];
+  } else {
+    rows=[
+      ['ЛКМ','Выстрел',(p.burstCount>1?p.burstCount+' стрел':'1 стрела')+(p.extraShots?(' +'+p.extraShots+' доп.'):'')+(p.arrowPoison?' + яд':''),'≈'+D(1)+(p.burstCount>1?' ×'+p.burstCount:''),(p.c.atkCd*p.atkCdM).toFixed(2)+'с',_slotUp(p,'lmb')],
+      ['Q','Шквал',p.squallCount+' стрел веером'+(p.squallExplode?' + взрыв':''),'≈'+D(p.squallDmgM)+' ×'+p.squallCount,(p.c.qCd*p.qCdM).toFixed(1)+'с',_slotUp(p,'q')],
+      ['E','Меткий глаз','След. '+p.eagleMaxCharges+' выстрелов усилены','урон ×'+p.eagleBonus,(p.c.eCd*p.eCdM).toFixed(1)+'с',_slotUp(p,'e')],
+      ['R','Ливень стрел',p.rainCount+' стрел во все стороны'+(p.rainExplode?' + взрыв':''),'≈'+D(p.rainDmgM)+' ×'+p.rainCount,(p.c.rCd*p.rCdM).toFixed(1)+'с',_slotUp(p,'r')],
+      ['X','Смертельный залп',(2*p.xVolley+1)+' стрел веером, взрыв','≈'+D(3)+' ×'+(2*p.xVolley+1),(p.c.xCd*p.xCdM).toFixed(0)+'с',_slotUp(p,'x')],
+      ['×3','Инстинкт',p.passiveTier+' прицельных стрел по ближайшему','≈'+D(1.8)+' ×'+p.passiveTier,'каждый 3-й удар',_slotUp(p,'pas')],
+    ];
+  }
+  const bx=48,by=88,bw=372,rh=58,bh=64+rows.length*rh;
+  ctx.save();
+  ctx.fillStyle='rgba(8,6,16,0.88)'; ctx.fillRect(bx,by,bw,bh);
+  ctx.strokeStyle=col; ctx.lineWidth=1.4; ctx.globalAlpha=0.8; ctx.strokeRect(bx,by,bw,bh); ctx.globalAlpha=1;
+  ctx.fillStyle=col; ctx.font='bold 13px Segoe UI'; ctx.textAlign='left';
+  ctx.fillText('📖 '+p.c.name+(p.arch?(' · '+p.arch.icon+' '+p.arch.name):(p.archetype==='none'?' · ⚜ верен классу':'')),bx+12,by+20);
+  ctx.fillStyle='#9a94b8'; ctx.font='10px Segoe UI';
+  ctx.fillText('база '+p.c.dmg+' · урон ×'+p.dmgM.toFixed(2)+' · крит '+Math.round((p.c.critChance+p.critBonus)*100)+'% · вамп '+Math.round(p.lifesteal*100)+'% · пробитие '+p.pierce+' · AoE ×'+p.archAoeM.toFixed(2),bx+12,by+36);
+  ctx.fillText('Tab — скрыть панель · цифры живые: меняются от апгрейдов',bx+12,by+50);
+  rows.forEach((r0,i)=>{
+    const ry=by+62+i*rh;
+    ctx.fillStyle=col; ctx.font='bold 10px Segoe UI'; ctx.fillText(r0[0],bx+12,ry+10);
+    ctx.fillStyle='#fff'; ctx.font='bold 12px Segoe UI'; ctx.fillText(r0[1],bx+44,ry+10);
+    ctx.fillStyle='#b8b2d2'; ctx.font='10px Segoe UI'; wrapText(r0[2],bx+44,ry+24,bw-58,12);
+    ctx.fillStyle='#ffd24a'; ctx.font='bold 10px Segoe UI';
+    ctx.fillText('Урон '+r0[3]+'  ·  КД '+r0[4]+'  ·  '+r0[5],bx+44,ry+50);
+    if(i<rows.length-1){ ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.beginPath(); ctx.moveTo(bx+10,ry+rh-4); ctx.lineTo(bx+bw-10,ry+rh-4); ctx.stroke(); }
+  });
+  ctx.restore();
+}
 // Стрелки по краю экрана к боссам/элитам вне поля зрения (только открытый мир)
 function drawThreatArrows(){
   if(gameMode!=='openworld'||!player||typeof enemies==='undefined')return;
@@ -2843,6 +2939,7 @@ function gameDraw(){
   if(dmgFlash>0){ ctx.fillStyle='rgba(180,0,0,'+(dmgFlash*0.5)+')'; ctx.fillRect(0,0,800,600); }   // флэш урона
   if(typeof drawThreatArrows==='function')drawThreatArrows();   // стрелки к внеэкранным угрозам
   drawHUD();
+  if(gameMode==='testroom'&&trInfo)drawTestInfo();   // 🧪 инфо-панель умений (Tab)
   if(onboardT>0&&!paused&&!(typeof TOUCH!=='undefined'&&TOUCH.active)){ const a=clamp(onboardT/1.6,0,1); ctx.save(); ctx.globalAlpha=a;
     const hints=['WASD — движение','Мышь — прицел','ЛКМ — атака (комбо из 3)','Q · E · R · X — умения'];
     const bw=250,bx=400-bw/2,by=424,bh=hints.length*19+22;
