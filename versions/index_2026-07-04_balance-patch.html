@@ -2,40 +2,17 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AVALO">
-<meta name="theme-color" content="#050508">
 <title>AVALO — Action RPG</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; }
-body { background: #050508; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none; overscroll-behavior: none; }
-/* редизайн 2026-06-19: широкий экран 16:9 (внутреннее разрешение 1280×720); мобильная адаптация 2026-07-05 */
-canvas { display: block; border: 2px solid #2a2535; box-shadow: 0 0 40px rgba(100,50,200,0.3); width: min(96vw, 160vh); height: auto; aspect-ratio: 16 / 9; image-rendering: pixelated; touch-action: none; }
+body { background: #050508; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; user-select: none; }
+/* редизайн 2026-06-19: широкий экран 16:9 (внутреннее разрешение 1280×720), пиксельная стилистика */
+canvas { display: block; border: 2px solid #2a2535; box-shadow: 0 0 40px rgba(100,50,200,0.3); width: min(96vw, 160vh); height: auto; aspect-ratio: 16 / 9; image-rendering: pixelated; }
 #ctrl { color: #666; font-size: clamp(9px, 1.4vh, 13px); margin-top: 8px; letter-spacing: 0.4px; text-align: center; }
-/* Мобильный / тач-экран: канвас letterbox'ится на весь вьюпорт, десктоп-подсказка скрыта */
-@media (pointer: coarse), (max-width: 820px) {
-  #ctrl { display: none; }
-  canvas { border: none; box-shadow: none; width: min(100vw, 177.7vh); width: min(100dvw, 177.7dvh); }
-}
-/* Портрет на телефоне — 16:9 слишком мелкий, просим повернуть в ландшафт */
-#rotate { display: none; position: fixed; inset: 0; z-index: 30; background: #050508; color: #9977ff; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
-#rotate .ico { font-size: 60px; animation: rot 2.4s ease-in-out infinite; }
-#rotate .t { font-size: 20px; font-weight: bold; color: #b39cff; }
-#rotate .s { font-size: 13px; color: #7766aa; max-width: 78vw; line-height: 1.5; }
-@keyframes rot { 0%,42% { transform: rotate(0deg); } 60%,100% { transform: rotate(-90deg); } }
-@media (pointer: coarse) and (orientation: portrait) {
-  canvas { display: none; }
-  #rotate { display: flex; }
-}
 </style>
 </head>
 <body>
 <canvas id="c" width="1280" height="720"></canvas>
-<div id="rotate"><div class="ico">📱</div><div class="t">Поверни телефон</div><div class="s">AVALO — широкоформатная игра 16:9. Разверни устройство в ландшафт, чтобы играть на весь экран.</div></div>
 <div id="ctrl">WASD — движение &nbsp;|&nbsp; ЛКМ — атака &nbsp;|&nbsp; Q / E / R — умения &nbsp;|&nbsp; X — X-способность (Lv10) &nbsp;|&nbsp; P — пауза &nbsp;|&nbsp; M — звук &nbsp;|&nbsp; 📱 тач: левый стик — движение, правый — прицел/огонь, кнопки умений справа</div>
 <script>
 'use strict';
@@ -468,7 +445,6 @@ function loadSave(){
   if(meta.trialBuff==null)meta.trialBuff=0;                          // заряды удачи за испытания
   if(meta.tutorialDone==null)meta.tutorialDone=false;                // онбординг: туториал первого забега
   if(!meta.tips)meta.tips={};                                        // одноразовые контекстные подсказки
-  if(!meta.archIcons)meta.archIcons={};                              // ⭐ купленные косметические эмблемы архетипов {key:1}
   if(meta.avatar==null)meta.avatar=0;                                // 🙂 аватар профиля (id из AVATARS; клэмп — в drawAvatar)
   stats=meta.stats; recomputePerks();
 }
@@ -1191,7 +1167,7 @@ const SKILL_TREES = {
 // идиомы, что в SKILL_TREES, поэтому применение архетипа не трогает базовые механики классов).
 // Каждый архетип: {name,color,icon,qName,eName,rName,xName,qCd,eCd,rCd,xCd,lmb(p,projs,parts,combo),q(p,projs,parts),e(p,projs,parts),r(p,projs,parts),x(p,projs,parts)}.
 const ARCHETYPES = { swordsman:{
-  berserk:{ name:'Берсерк', color:'#ff3322', icon:'🔥', dmgMul:2.0, lmbName:'Базовая атака клинком',
+  berserk:{ name:'Берсерк', color:'#ff3322', icon:'🔥', lmbName:'Базовая атака клинком',
     qName:'Гнев маятника', eName:'Раскол земли', rName:'Кровавый вихрь', xName:'Удар титана',
     qCd:7, eCd:9, rCd:8, xCd:32,
     weapon:'axe', wcol:'#ff7744', passiveName:'💥Кровь', passiveDesc:'Кровавый взрыв (вампиризм ×2)',
@@ -1231,7 +1207,7 @@ const ARCHETYPES = { swordsman:{
     r:(p,projs,parts)=>{ p.invTimer=Math.max(p.invTimer,0.5); const r=150*p.archAoeM,dmg=p._dmg(p.c.dmg*2.5); archAoe(p,parts,p.x,p.y,r,dmg,'r',{color:'#66ffff'}); },
     x:(p,projs,parts)=>{ const targets=[...enemies].filter(e=>!e.dead).sort((a,b)=>dist(p,a)-dist(p,b)).slice(0,8); const dmg=p._dmg(p.c.dmg*2.2); let lastX=p.x,lastY=p.y; targets.forEach((e,ti)=>{ dashGhosts.push({x:lastX,y:lastY,angle:Math.atan2(e.y-lastY,e.x-lastX),cls:p.classId,life:0.25,max:0.25}); const dd=(p.au&&p.au.duExec&&e.hp<e.maxHp*0.35)?dmg*2.5:dmg; e.hit(dd,parts,'x','roll'); score+=Math.floor(dd); if(p.lifesteal>0)p.heal(Math.floor(dd*p.lifesteal)); const sa=Math.random()*Math.PI; parts.push(new Particle(e.x,e.y,0,0,'#ffffff',0.24,44,{kind:'slash',rot:sa})); parts.push(new Particle(e.x,e.y,0,0,'#66ffff',0.3,40,{kind:'slash',rot:sa+Math.PI/2})); for(let i=0;i<8;i++){const a=Math.random()*Math.PI*2;parts.push(new Particle(e.x,e.y,Math.cos(a)*160,Math.sin(a)*160,'#aaffff',0.35,3));} rings.push(new Ring(e.x,e.y,'#66ffff',48)); lastX=e.x;lastY=e.y; }); if(p.au&&p.au.duFinale&&targets.length){ const pts=targets.map(e=>({x:e.x,y:e.y})); after(0.6,()=>{ pts.forEach(pt=>{ archAoe(p,parts,pt.x,pt.y,70*p.archAoeM,p._dmg(p.c.dmg*1.1),'x',{color:'#66ffff'}); parts.push(new Particle(pt.x,pt.y,0,0,'#ffffff',0.22,38,{kind:'slash',rot:Math.random()*Math.PI})); }); skyFlashT=Math.max(skyFlashT,0.13); hitStopFor(0.04); }); } p.x=clamp(lastX,p.r+20,worldW-20-p.r); p.y=clamp(lastY,p.r+20,worldH-20-p.r); p.invTimer=Math.max(p.invTimer,0.3); if(targets.length){ skyFlashT=Math.max(skyFlashT,0.14); hitStopFor(0.05); addShake(5); } else for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2;parts.push(new Particle(p.x,p.y,Math.cos(a)*160,Math.sin(a)*160,'#66ffff',0.4,3));} },   // яркие крест-росчерки на каждой цели + казнь (au_du4)
   },
-  guardian:{ name:'Страж', color:'#8fa6b8', icon:'🛡', dmgMul:1.5, lmbName:'Базовая атака клинком',
+  guardian:{ name:'Страж', color:'#8fa6b8', icon:'🛡', lmbName:'Базовая атака клинком',
     qName:'Таранный рывок', eName:'Шипастый оплот', rName:'Щит-таран', xName:'Сейсмический таран',
     qCd:8, eCd:10, rCd:9, xCd:34,
     weapon:'mace', wcol:'#cfd9e2', passiveName:'🛡Волна', passiveDesc:'Волна: отброс + стан',
@@ -1333,7 +1309,7 @@ const ARCHETYPES = { swordsman:{
     r:(p,projs,parts)=>{ const st=p.au&&p.au.snStorm; const half=st?4:2; for(let i=-half;i<=half;i++){ const a=p.angle+i*0.22; const dmg=p._dmg(p.c.dmg*2); const pr=new Proj(p.x,p.y,a,540,dmg,'#ffdd44',7,false,1+p.pierce); pr.src='r'; pr.bouncy=true; if(st)pr.rico=2; projs.push(pr); } for(let i=0;i<14;i++)parts.push(new Particle(p.x,p.y,Math.cos(p.angle)*200,Math.sin(p.angle)*200,'#ffdd44',0.35,3)); },   // au_sn4: шторм рикошетов
     x:(p,projs,parts)=>{ const tx=clamp(mouse.x+camX,40,worldW-40),ty=clamp(mouse.y+camY,40,worldH-40); archAoe(p,parts,tx,ty,150*p.archAoeM,p._dmg(p.c.dmg*3),'x',{color:'#ffcc00'}); rings.push(new Ring(tx,ty,'#ffee88',150*p.archAoeM)); for(let i=0;i<12;i++){ const a=(i/12)*Math.PI*2; const pr=new Proj(tx,ty,a,420,p._dmg(p.c.dmg*1.2),'#ffdd66',6,false,p.pierce); pr.src='x'; projs.push(pr); } addShake(4); },
   },
-  hunter:{ name:'Ловчий', color:'#88aa44', icon:'🐾', dmgMul:1.5, lmbName:'Базовый выстрел',
+  hunter:{ name:'Ловчий', color:'#88aa44', icon:'🐾', lmbName:'Базовый выстрел',
     qName:'Ядовитая роса', eName:'Капкан', rName:'Ловчий питомец', xName:'Великая охота',
     qCd:8, eCd:9, rCd:8, xCd:33,
     weapon:'bow_hunt', wcol:'#a8c860', passiveName:'☠Яд', passiveDesc:'Яд + лужа у цели',
@@ -1744,8 +1720,9 @@ function _ease(t){return t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
 function drawHeroBody(ctx, P, col, t){
   const s=(P.r||18)/18, cls=P.classId;
   const swT=P.swingTimer||0;
-  const sw = swT>0 ? 1-(swT/0.28) : -1;          // прогресс маха меча 0..1 (-1=покой)
-  const ar = (P.atkAnim>0) ? P.atkAnim/0.20 : 0; // отдача атаки 1->0
+  const sw = swT>0 ? Math.max(0,1-(swT/0.28)) : -1;          // прогресс маха меча 0..1 (-1=покой; клэмп: у Берсерка мах 0.34с)
+  const ar = (P.atkAnim>0) ? P.atkAnim/(P.atkAnimMax||0.20) : 0; // отдача атаки 1->0 (длительность зависит от комбо)
+  const combo = P.atkCombo||0;                   // шаг комбо 0/1/2
   const cs = (P.castAnim>0)? P.castAnim/0.40 : 0; // вспышка умения 1->0
   const mv = P.moving||0, wob=Math.sin(P.walkPhase||0), br=Math.sin((P.breath||0)*2.2);
   const castCol = P.castCol||col;
@@ -1754,12 +1731,16 @@ function drawHeroBody(ctx, P, col, t){
   if(cls==='swordsman'){ trim='#ffd24a'; accent='#bfe6ff'; eyeCol='#dff0ff'; eyeGlow='#7fd0ff'; }
   else if(cls==='wizard'){ trim='#ffd24a'; accent='#d7a3ff'; eyeCol='#ffe27a'; eyeGlow='#ff8a1e'; }
   else { trim='#d6b079'; accent='#aaffc4'; eyeCol='#c8ffd6'; eyeGlow='#54ff9a'; }
-  const PAL={col,dark,mid,lite,glow,trim,accent,eyeCol,eyeGlow,castCol,sw,ar,cs,mv,wob,br,t};
+  if(P.arch&&P.arch.wcol) accent=P.arch.wcol;   // архетип: оружие красит след маха/кромку/тетиву в свой цвет
+  const PAL={col,dark,mid,lite,glow,trim,accent,eyeCol,eyeGlow,castCol,sw,ar,cs,mv,wob,br,t,combo,weapon:(P.arch&&P.arch.weapon)||'base'};
   ctx.save();
   ctx.translate(P.x,P.y);
   ctx.rotate(P.angle);
-  const bobX=-(mv*Math.abs(wob)+(1-mv)*Math.abs(br)*0.4)*0.7*s;
-  ctx.translate(bobX,0);
+  const step=Math.abs(wob);
+  const bounce=1 + mv*step*0.05 + (1-mv)*Math.abs(br)*0.02;     // подскок при ходьбе + дыхание (масштаб)
+  const bobX=-(mv*step+(1-mv)*Math.abs(br)*0.4)*0.7*s;
+  ctx.translate(bobX + (P.moveLX||0)*mv*3*s, (P.moveLY||0)*mv*3*s);   // наклон корпуса в сторону бега
+  ctx.scale(bounce,bounce);
   drawLegs(ctx,s,dark,mid,mv,wob);
   if(cls!=='swordsman') drawRobe(ctx,s,col,mid,lite,mv,wob,br);
   drawTorso(ctx,cls,s,col,dark,mid,lite,trim);
@@ -1769,15 +1750,15 @@ function drawHeroBody(ctx, P, col, t){
   ctx.restore();
 }
 function drawLegs(ctx,s,dark,mid,mv,wob){
-  const sw=mv*wob*6*s;
+  const sw=mv*wob*7.5*s, lf=mv*Math.abs(wob)*1.4*s;   // шире шаг + лёгкий подъём стопы
   const leg=(x0,y0,x1,y1)=>{ ctx.strokeStyle=dark; ctx.lineWidth=5.5*s; ctx.lineCap='round';
     ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
     ctx.fillStyle='#241d30'; ctx.beginPath(); ctx.ellipse(x1,y1,3.6*s,2.7*s,0,0,Math.PI*2); ctx.fill(); };
-  leg(-4*s, 5*s, -13*s+sw,  6.5*s);
-  leg(-4*s,-5*s, -13*s-sw, -6.5*s);
+  leg(-4*s, 5*s, -13*s+sw,  6.5*s+lf);
+  leg(-4*s,-5*s, -13*s-sw, -6.5*s-lf);
 }
 function drawRobe(ctx,s,col,mid,lite,mv,wob,br){
-  const sway=(mv*wob*3+br*1.4)*s;
+  const sway=(mv*wob*4.5+br*1.7)*s;
   const g=ctx.createLinearGradient(-18*s,0,6*s,0);
   g.addColorStop(0,shade(col,-0.62)); g.addColorStop(0.7,mid); g.addColorStop(1,lite);
   ctx.fillStyle=g;
@@ -1834,18 +1815,21 @@ function drawHead(ctx,kind,s,P){
   ctx.restore();
 }
 function drawSwordsman(ctx,P,s,PAL){
-  const {dark,mid,lite,trim,accent,br,sw,cs,castCol}=PAL;
-  const shR={x:2*s,y:9*s}, shL={x:2*s,y:-9*s};
-  let bladeA;
-  if(sw>=0){ bladeA = 1.15 + (-1.3-1.15)*_ease(sw); }
-  else { bladeA = 0.5 + br*0.05; }
+  const {dark,mid,lite,trim,accent,br,sw,cs,castCol,combo,mv,wob}=PAL;
+  const rk=mv*wob*1.8*s, shR={x:2*s+rk,y:9*s}, shL={x:2*s-rk,y:-9*s};   // плечи покачиваются в шаге
+  // три варианта взмаха: 0 форхенд (одна сторона), 1 бэкхенд (другая), 2 широкий разрубающий финишер
+  let s0,s1;
+  if(combo===1){ s0=-1.35; s1=0.35; }
+  else if(combo===2){ s0=-1.8; s1=1.8; }
+  else { s0=1.35; s1=-0.35; }
+  const bladeA = (sw>=0) ? s0+(s1-s0)*_ease(sw) : 0.5+br*0.1+mv*wob*0.06;   // в покое клинок дышит, в шаге чуть качается
   if(sw>=0){
-    const a0=1.15, a1=1.15+(-1.3-1.15)*_ease(sw), fade=1-sw;
+    const a0=s0, a1=bladeA, fade=1-sw, fin=combo===2;
     ctx.save(); ctx.lineCap='round';
-    ctx.strokeStyle=_rgba(accent,0.32*fade+0.12); ctx.lineWidth=18*s; ctx.shadowColor=accent; ctx.shadowBlur=24*s;
-    ctx.beginPath(); ctx.arc(0,0,52*s,Math.min(a0,a1),Math.max(a0,a1)); ctx.stroke();
-    ctx.strokeStyle=_rgba('#ffffff',0.9*fade); ctx.lineWidth=3.5*s; ctx.shadowBlur=12*s;
-    ctx.beginPath(); ctx.arc(0,0,52*s,Math.min(a0,a1),Math.max(a0,a1)); ctx.stroke();
+    ctx.strokeStyle=_rgba(fin?'#fff0b0':accent,(fin?0.4:0.32)*fade+0.12); ctx.lineWidth=(fin?22:18)*s; ctx.shadowColor=fin?'#ffd24a':accent; ctx.shadowBlur=(fin?30:24)*s;
+    ctx.beginPath(); ctx.arc(0,0,(fin?56:52)*s,Math.min(a0,a1),Math.max(a0,a1)); ctx.stroke();
+    ctx.strokeStyle=_rgba('#ffffff',0.95*fade); ctx.lineWidth=(fin?4.5:3.5)*s; ctx.shadowBlur=12*s;
+    ctx.beginPath(); ctx.arc(0,0,(fin?56:52)*s,Math.min(a0,a1),Math.max(a0,a1)); ctx.stroke();
     ctx.restore();
   }
   ctx.fillStyle=lite; ctx.beginPath(); ctx.arc(shL.x,shL.y,5.5*s,0,Math.PI*2); ctx.arc(shR.x,shR.y,5.5*s,0,Math.PI*2); ctx.fill();
@@ -1864,19 +1848,60 @@ function drawSwordsman(ctx,P,s,PAL){
   drawArm(ctx,shR.x,shR.y,hand.x,hand.y,s,mid,5.5,lite);
   ctx.save();
   ctx.translate(hand.x,hand.y); ctx.rotate(bladeA);
-  const len=48*s;
-  ctx.strokeStyle=trim; ctx.lineWidth=3.5*s; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(2*s,-8*s); ctx.lineTo(2*s,8*s); ctx.stroke();
-  ctx.strokeStyle=shade(PAL.col,-0.3); ctx.lineWidth=4*s; ctx.beginPath(); ctx.moveTo(2*s,0); ctx.lineTo(-7*s,0); ctx.stroke();
-  ctx.fillStyle=trim; ctx.beginPath(); ctx.arc(-8*s,0,3*s,0,Math.PI*2); ctx.fill();
-  const bg=ctx.createLinearGradient(0,0,len,0);
-  bg.addColorStop(0,'#cfe0f0'); bg.addColorStop(0.45,'#ffffff'); bg.addColorStop(1,'#9fc2e0');
-  ctx.fillStyle=bg; ctx.shadowColor=accent; ctx.shadowBlur=(sw>=0?16:7)*s;
-  ctx.beginPath();
-  ctx.moveTo(4*s,-4*s); ctx.lineTo(len-9*s,-3*s); ctx.lineTo(len,0); ctx.lineTo(len-9*s,3*s); ctx.lineTo(4*s,4*s);
-  ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
-  ctx.strokeStyle=shade('#6a86a8',0); ctx.lineWidth=1.2*s; ctx.stroke();
-  ctx.strokeStyle=_rgba('#9fc0e0',0.7); ctx.lineWidth=1*s; ctx.beginPath(); ctx.moveTo(6*s,0); ctx.lineTo(len-9*s,0); ctx.stroke();
+  const wk=PAL.weapon;
+  if(wk==='axe'){
+    // Берсерк: боевой топор — древко + двойная секира с раскалённой кромкой
+    ctx.strokeStyle='#5a3a22'; ctx.lineWidth=4*s; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-8*s,0); ctx.lineTo(34*s,0); ctx.stroke();
+    ctx.strokeStyle=trim; ctx.lineWidth=1.6*s; ctx.beginPath(); ctx.moveTo(2*s,0); ctx.lineTo(10*s,0); ctx.stroke();
+    const hx2=34*s;
+    const ag=ctx.createLinearGradient(hx2,-16*s,hx2,16*s);
+    ag.addColorStop(0,'#e8ddd0'); ag.addColorStop(0.5,'#fff5ea'); ag.addColorStop(1,'#e8ddd0');
+    ctx.fillStyle=ag; ctx.shadowColor=accent; ctx.shadowBlur=(sw>=0?18:8)*s;
+    ctx.beginPath();
+    ctx.moveTo(hx2,-3*s); ctx.quadraticCurveTo(hx2+16*s,-8*s,hx2+13*s,-16*s); ctx.quadraticCurveTo(hx2+3*s,-11*s,hx2-2*s,-3*s);
+    ctx.moveTo(hx2,3*s); ctx.quadraticCurveTo(hx2+16*s,8*s,hx2+13*s,16*s); ctx.quadraticCurveTo(hx2+3*s,11*s,hx2-2*s,3*s);
+    ctx.fill(); ctx.shadowBlur=0;
+    ctx.strokeStyle=_rgba(accent,0.85); ctx.lineWidth=1.6*s; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(hx2+13*s,-16*s); ctx.quadraticCurveTo(hx2+17*s,0,hx2+13*s,16*s); ctx.stroke();
+  } else if(wk==='mace'){
+    // Страж: булава — стальное древко + шипованная голова
+    ctx.strokeStyle='#4a4f58'; ctx.lineWidth=4.5*s; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-8*s,0); ctx.lineTo(28*s,0); ctx.stroke();
+    ctx.fillStyle='#dfe7ee';
+    for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; ctx.beginPath();
+      ctx.moveTo(34*s+Math.cos(a)*8*s,Math.sin(a)*8*s);
+      ctx.lineTo(34*s+Math.cos(a+0.22)*8*s,Math.sin(a+0.22)*8*s);
+      ctx.lineTo(34*s+Math.cos(a+0.11)*13*s,Math.sin(a+0.11)*13*s);
+      ctx.closePath(); ctx.fill(); }
+    const mg=ctx.createRadialGradient(32*s,-2*s,1,34*s,0,10*s);
+    mg.addColorStop(0,'#f2f6fa'); mg.addColorStop(1,'#8d99a6');
+    ctx.fillStyle=mg; ctx.shadowColor=accent; ctx.shadowBlur=(sw>=0?14:6)*s;
+    ctx.beginPath(); ctx.arc(34*s,0,8.5*s,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  } else if(wk==='rapier'){
+    // Дуэлянт: рапира — чашка-гарда + тонкий длинный клинок
+    ctx.fillStyle=trim; ctx.beginPath(); ctx.arc(0,0,3.4*s,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=shade(PAL.col,-0.3); ctx.lineWidth=3*s; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-7*s,0); ctx.stroke();
+    const len2=56*s;
+    const rg=ctx.createLinearGradient(0,0,len2,0);
+    rg.addColorStop(0,'#d8f4f6'); rg.addColorStop(0.5,'#ffffff'); rg.addColorStop(1,'#9fdfe6');
+    ctx.fillStyle=rg; ctx.shadowColor=accent; ctx.shadowBlur=(sw>=0?16:8)*s;
+    ctx.beginPath(); ctx.moveTo(3*s,-1.6*s); ctx.lineTo(len2-6*s,-1.1*s); ctx.lineTo(len2,0); ctx.lineTo(len2-6*s,1.1*s); ctx.lineTo(3*s,1.6*s); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
+  } else {
+    const len=48*s;
+    ctx.strokeStyle=trim; ctx.lineWidth=3.5*s; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(2*s,-8*s); ctx.lineTo(2*s,8*s); ctx.stroke();
+    ctx.strokeStyle=shade(PAL.col,-0.3); ctx.lineWidth=4*s; ctx.beginPath(); ctx.moveTo(2*s,0); ctx.lineTo(-7*s,0); ctx.stroke();
+    ctx.fillStyle=trim; ctx.beginPath(); ctx.arc(-8*s,0,3*s,0,Math.PI*2); ctx.fill();
+    const bg=ctx.createLinearGradient(0,0,len,0);
+    bg.addColorStop(0,'#cfe0f0'); bg.addColorStop(0.45,'#ffffff'); bg.addColorStop(1,'#9fc2e0');
+    ctx.fillStyle=bg; ctx.shadowColor=accent; ctx.shadowBlur=(sw>=0?16:7)*s;
+    ctx.beginPath();
+    ctx.moveTo(4*s,-4*s); ctx.lineTo(len-9*s,-3*s); ctx.lineTo(len,0); ctx.lineTo(len-9*s,3*s); ctx.lineTo(4*s,4*s);
+    ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
+    ctx.strokeStyle=shade('#6a86a8',0); ctx.lineWidth=1.2*s; ctx.stroke();
+    ctx.strokeStyle=_rgba('#9fc0e0',0.7); ctx.lineWidth=1*s; ctx.beginPath(); ctx.moveTo(6*s,0); ctx.lineTo(len-9*s,0); ctx.stroke();
+  }
   ctx.restore();
   if(cs>0){ ctx.save(); ctx.shadowColor=castCol; ctx.shadowBlur=28*s; ctx.strokeStyle=_rgba(castCol,0.55*cs); ctx.lineWidth=3.5*s;
     ctx.beginPath(); ctx.arc(0,0,(20+12*cs)*s,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
@@ -1890,9 +1915,6 @@ function drawWizard(ctx,P,s,PAL){
     if(combo===1){ w0=-0.95; w1=0.15; } else if(combo===2){ w0=-1.5; w1=0.12; } else { w0=0.85; w1=-0.2; }
     staffA = w0+(w1-w0)*prog - cs*0.13; swA0 = w0 - cs*0.13;
   } else { staffA = -0.12 - cs*0.13 + br*0.08 + mv*wob*0.05; }   // в покое посох дышит, в шаге качается
-  const {col,dark,mid,lite,trim,accent,castCol,ar,cs,br,t}=PAL;
-  const shR={x:2*s,y:9*s}, shL={x:2*s,y:-9*s};
-  const lift=(ar*0.2+cs*0.13), staffA=-0.12 - lift;
   const gripLo={x:7*s,y:5*s}, gripHi={x:16*s,y:-2*s};
   const tip={x:Math.cos(staffA)*54*s, y:Math.sin(staffA)*54*s - 6*s};
   const butt={x:-9*s,y:8*s};
@@ -1907,8 +1929,6 @@ function drawWizard(ctx,P,s,PAL){
   if(ar>0 && swA0!=null){ const fade=ar; ctx.save(); ctx.lineCap='round'; ctx.strokeStyle=_rgba(fin?'#ffd24a':accent,0.3*fade+0.08); ctx.lineWidth=(fin?12:9)*s; ctx.shadowColor=fin?'#ff9a2a':accent; ctx.shadowBlur=(fin?22:16)*s; ctx.beginPath(); ctx.arc(0,-6*s,54*s,Math.min(swA0,staffA),Math.max(swA0,staffA)); ctx.stroke(); ctx.restore(); ctx.shadowBlur=0; }
   const orbCol = ar>0 ? (fin?'#ffe9b0':'#ffd24a') : (cs>0 ? castCol : accent);
   const pulse = 1 + Math.sin(t*6)*0.1 + ar*(fin?0.8:0.55) + cs*0.4, oR = 7*s*pulse*(fin?1.25:1);
-  const orbCol = ar>0 ? '#ffd24a' : (cs>0 ? castCol : accent);
-  const pulse = 1 + Math.sin(t*6)*0.1 + ar*0.55 + cs*0.4, oR = 7*s*pulse;
   ctx.strokeStyle=trim; ctx.lineWidth=2*s; ctx.lineCap='round';
   ctx.beginPath(); ctx.arc(tip.x,tip.y,oR+3*s, staffA+2.2, staffA+4.1); ctx.stroke();
   ctx.beginPath();
@@ -1939,8 +1959,6 @@ function drawWizard(ctx,P,s,PAL){
 function drawArcher(ctx,P,s,PAL){
   const {col,dark,mid,lite,trim,accent,castCol,ar,cs,combo,mv,wob,br}=PAL;
   const rk=mv*wob*1.8*s, shR={x:2*s+rk,y:9*s}, shL={x:2*s-rk,y:-9*s};   // плечи покачиваются в шаге
-  const {col,dark,mid,lite,trim,accent,castCol,ar,cs}=PAL;
-  const shR={x:2*s,y:9*s}, shL={x:2*s,y:-9*s};
   ctx.save();
   for(let i=-1;i<=1;i++){ const a=Math.PI*0.86+i*0.16, qx=-9*s, qy=-9*s;
     ctx.strokeStyle=i===0?'#e8e2cf':'#cdbf9a'; ctx.lineWidth=2*s; ctx.lineCap='round';
@@ -1961,15 +1979,6 @@ function drawArcher(ctx,P,s,PAL){
   ctx.strokeStyle=riserCol; ctx.lineWidth=5*s; ctx.beginPath(); ctx.moveTo(apex.x-3*s,-4*s); ctx.lineTo(apex.x-3*s,4*s); ctx.stroke();
   if(wk==='bow_blade'){ ctx.fillStyle='#e8eef4'; ctx.beginPath(); ctx.moveTo(tipU.x,tipU.y); ctx.lineTo(tipU.x+7*s,tipU.y-6*s); ctx.lineTo(tipU.x+11*s,tipU.y+1*s); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(tipD.x,tipD.y); ctx.lineTo(tipD.x+7*s,tipD.y+6*s); ctx.lineTo(tipD.x+11*s,tipD.y-1*s); ctx.closePath(); ctx.fill(); }   // Шквал: клинки на концах лука
   if(wk==='bow_gold'){ ctx.strokeStyle=_rgba('#ffd24a',0.7); ctx.lineWidth=1.2*s; ctx.beginPath(); ctx.moveTo(tipU.x,tipU.y); ctx.quadraticCurveTo(tx+2*depth+2*s,0,tipD.x,tipD.y); ctx.stroke(); }   // Снайпер: золотая жила по дуге
-  const tx=16*s, H=16*s, depth=15*s;
-  const apex={x:tx+depth, y:0}, tipU={x:tx,y:-H}, tipD={x:tx,y:H};
-  const rel=ar, nockX = tx - 11*s + rel*14*s, nock={x:nockX,y:0};
-  ctx.save();
-  ctx.strokeStyle='#7a5230'; ctx.lineWidth=3.8*s; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(tipU.x,tipU.y); ctx.quadraticCurveTo(tx+2*depth,0, tipD.x,tipD.y); ctx.stroke();
-  ctx.strokeStyle=_rgba(accent,0.4); ctx.lineWidth=1.4*s;
-  ctx.beginPath(); ctx.moveTo(tipU.x,tipU.y); ctx.quadraticCurveTo(tx+2*depth-2*s,0, tipD.x,tipD.y); ctx.stroke();
-  ctx.strokeStyle='#5a3c22'; ctx.lineWidth=5*s; ctx.beginPath(); ctx.moveTo(apex.x-3*s,-4*s); ctx.lineTo(apex.x-3*s,4*s); ctx.stroke();
   ctx.strokeStyle=_rgba('#ffffff',0.88); ctx.lineWidth=1.4*s;
   ctx.beginPath(); ctx.moveTo(tipU.x,tipU.y); ctx.lineTo(nock.x,0); ctx.lineTo(tipD.x,tipD.y); ctx.stroke();
   if(rel<0.55){
@@ -1984,8 +1993,6 @@ function drawArcher(ctx,P,s,PAL){
     ctx.beginPath(); ctx.arc(apex.x,0,(fin?8.5:5)*s*rel,0,Math.PI*2); ctx.fill();
     if(fin){ ctx.strokeStyle=_rgba(accent,0.55*rel); ctx.lineWidth=2*s; ctx.lineCap='round'; for(let k=-1;k<=1;k++){ ctx.beginPath(); ctx.moveTo(apex.x+5*s,k*4*s); ctx.lineTo(apex.x+20*s,k*9*s); ctx.stroke(); } }   // линии скорости мощного выстрела
     ctx.restore();
-    ctx.save(); ctx.shadowColor=accent; ctx.shadowBlur=22*s; ctx.fillStyle=_rgba('#ffffff',0.9*rel);
-    ctx.beginPath(); ctx.arc(apex.x,0,5*s*rel,0,Math.PI*2); ctx.fill(); ctx.restore();
   }
   ctx.restore();
   drawArm(ctx,shL.x,shL.y,apex.x-2*s,0,s,mid,4.6,lite);
@@ -2003,7 +2010,9 @@ class Player {
     this.hp=c.hp; this.maxHp=c.hp; this.spd=c.spd;
     this.atkTimer=0; this.qTimer=0; this.eTimer=0; this.invTimer=0; this.swingTimer=0; this.swingBase=0;
     // Облик героя (редизайн 2026-06-19): таймеры анимации фигуры/оружия
-    this.atkAnim=0; this.castAnim=0; this.castCol='#ffffff'; this.walkPhase=0; this.moving=0; this.breath=Math.random()*6;
+    this.atkAnim=0; this.atkAnimMax=0.2; this.castAnim=0; this.castCol='#ffffff'; this.walkPhase=0; this.moving=0; this.breath=Math.random()*6;
+    this.comboStep=0; this.atkCombo=0;   // 3-шаговое комбо ЛКМ (0→1→2→0): меняет только анимацию
+    this.moveLX=0; this.moveLY=0;        // сглаженный вектор движения в локальной системе (наклон фигуры)
     this.dead=false;
     // Stats
     this.dmgM=1; this.atkCdM=1; this.qCdM=1; this.eCdM=1;
@@ -2072,7 +2081,7 @@ class Player {
       triggerLevelup();
     }
   }
-  _dmg(base) { return base * this.dmgM * (this.archM||1) * (this.arch&&this.arch.dmgMul||1); }   // archM: сила дерева; dmgMul: пер-архетип буст (Берсерк ×2 / Страж ×1.5 / Ловчий ×1.5 — переход в архетип не теряет урон)
+  _dmg(base) { return base * this.dmgM * (this.archM||1); }   // archM: сила дерева (узлы до 15 ур.) конвертируется в силу архетипа
 
   update(dt) {
     let dx=0, dy=0;
@@ -2087,6 +2096,7 @@ class Player {
     this.x=clamp(this.x+dx*espd*dt, this.r+20, worldW-20-this.r);
     this.y=clamp(this.y+dy*espd*dt, this.r+20, worldH-20-this.r);
     if(len>0){ this.walkPhase+=espd*dt*0.05; this.moving=Math.min(1,this.moving+dt*6); } else { this.moving=Math.max(0,this.moving-dt*6); }   // облик: шаг/покой
+    { const _ca=Math.cos(this.angle),_sa=Math.sin(this.angle); const _lx=len>0?(dx*_ca+dy*_sa):0,_ly=len>0?(-dx*_sa+dy*_ca):0,_k=Math.min(1,dt*7); this.moveLX+=(_lx-this.moveLX)*_k; this.moveLY+=(_ly-this.moveLY)*_k; }   // облик: вектор бега в локальной системе (наклон)
     if(len>0)track('distance_traveled',espd*dt);
     if(typeof TOUCH!=='undefined'&&TOUCH.active){
       if(TOUCH.aim.active&&TOUCH.aim.mag>0.001){ this.angle=Math.atan2(TOUCH.aim.ny,TOUCH.aim.nx); }   // ручной прицел правым стиком
@@ -2112,7 +2122,9 @@ class Player {
   attack(projs, parts) {
     if (this.atkTimer > 0) return;
     this.atkTimer = this.c.atkCd * this.atkCdM;
-    this.atkAnim = 0.2;   // облик: отдача посоха/лука (у мечника доминирует swingTimer)
+    const combo = this.comboStep; this.atkCombo = combo; this.comboStep = (this.comboStep+1)%3;   // 3-шаговое комбо (анимация)
+    this.atkAnim = 0.2; this.atkAnimMax = 0.2;   // облик: отдача посоха/лука (у мечника доминирует swingTimer)
+    if (this.classId==='archer' && combo===2){ this.atkAnim=0.34; this.atkAnimMax=0.34; }   // лучник: мощный 3-й выстрел — дольше натяг
     const eagle = this.eagleCharges > 0;
     if (eagle) this.eagleCharges--;
 
@@ -2173,7 +2185,7 @@ class Player {
     if(this.arch){ if(this.qTimer>0)return; this.qTimer=this.arch.qCd*this.qCdM; track('casts_q'); if(typeof SFX!=='undefined')SFX.play('q'); this.castAnim=0.4; this.castCol=this.arch.color; spawnCastRune(this.castCol,1); this._pcx=this.x; this._pcy=this.y; this.arch.q(this,projs,parts); archPostCast(this,'q',projs,parts); return; }   // архетип: Q полностью заменена
     if (this.qTimer > 0) return;   // Q открыто с 1 уровня (правило разблокировок 1/3/5/10)
     this.qTimer = this.c.qCd * this.qCdM; track('casts_q'); if(typeof SFX!=='undefined')SFX.play('q');
-    this.castAnim=0.4; this.castCol=this.classId==='swordsman'?'#aaddff':this.classId==='wizard'?'#ff7733':'#aaff66';   // облик: вспышка умения
+    this.castAnim=0.4; this.castCol=this.classId==='swordsman'?'#aaddff':this.classId==='wizard'?'#ff7733':'#aaff66'; spawnCastRune(this.castCol,1);   // облик: вспышка умения + рунный круг
     if (this.classId === 'swordsman') {
       bladeWaves.push(new BladeWave(this.x,this.y,this.angle,this._dmg(this.c.dmg*this.waveQMult*this.bladeWaveDM),this.bladeWaveR));
       if(this.dualWave)bladeWaves.push(new BladeWave(this.x,this.y,this.angle+0.28,this._dmg(this.c.dmg*(this.waveQMult*0.72)*this.bladeWaveDM),this.bladeWaveR));
@@ -2194,9 +2206,13 @@ class Player {
   }
 
   eAbility(projs, parts) {
-    if (this.eTimer > 0 || this.level < 5) return;
-    this.eTimer = this.c.eCd * this.eCdM; track('casts_e'); if(typeof SFX!=='undefined')SFX.play('e');
-    this.castAnim=0.4; this.castCol=this.classId==='swordsman'?'#88ccff':this.classId==='wizard'?'#88eeff':'#ffee44';   // облик: вспышка умения
+    if(this.arch){ if(this.eTimer>0)return; this.eTimer=this.arch.eCd*this.eCdM; track('casts_e'); if(typeof SFX!=='undefined')SFX.play('e'); this.castAnim=0.4; this.castCol=this.arch.color; spawnCastRune(this.castCol,1); this._pcx=this.x; this._pcy=this.y; this.arch.e(this,projs,parts); archPostCast(this,'e',projs,parts); return; }   // архетип: E полностью заменена
+    if (this.level < 3) return;   // E открывается на 3 ур.
+    const _useCh = this.classId==='swordsman' && this.dashMax>1;   // sdash4: система зарядов рывка
+    if(_useCh){ if(this.dashCur<=0) return; } else if(this.eTimer>0) return;
+    if(_useCh){ this.dashCur--; if(this.eTimer<=0)this.eTimer=this.c.eCd*this.eCdM; } else this.eTimer=this.c.eCd*this.eCdM;
+    track('casts_e'); if(typeof SFX!=='undefined')SFX.play('e');
+    this.castAnim=0.4; this.castCol=this.classId==='swordsman'?'#88ccff':this.classId==='wizard'?'#88eeff':'#ffee44'; spawnCastRune(this.castCol,1);   // облик: вспышка умения + рунный круг
 
     if (this.classId === 'swordsman') {
       // Charge: dash + damage
@@ -2232,7 +2248,7 @@ class Player {
     if(this.arch){ if(this.rTimer>0)return; this.rTimer=this.arch.rCd*this.rCdM; track('casts_r'); if(typeof SFX!=='undefined')SFX.play('r'); this.castAnim=0.45; this.castCol=this.arch.color; spawnCastRune(this.castCol,1.2); this._pcx=this.x; this._pcy=this.y; this.arch.r(this,projs,parts); archPostCast(this,'r',projs,parts); return; }   // архетип: R полностью заменена
     if (this.rTimer > 0 || this.level < 5) return;   // R открывается на 5 ур.
     this.rTimer = this.c.rCd * this.rCdM; track('casts_r'); if(typeof SFX!=='undefined')SFX.play('r');
-    this.castAnim=0.45; this.castCol=this.classId==='swordsman'?'#ffcc44':this.classId==='wizard'?'#aaeeff':'#88ff44';   // облик: вспышка умения
+    this.castAnim=0.45; this.castCol=this.classId==='swordsman'?'#ffcc44':this.classId==='wizard'?'#aaeeff':'#88ff44'; spawnCastRune(this.castCol,1.2);   // облик: вспышка умения + рунный круг
     if (this.classId === 'swordsman') {
       // Яростный удар: фронтальная дуга (апгрейды rFuryMult/furyRadius/furyArc/furyStun/furyShock)
       enemies.forEach(e=>{const dx=e.x-this.x,dy=e.y-this.y;if(Math.hypot(dx,dy)<this.furyRadius&&Math.abs(normA(Math.atan2(dy,dx)-this.angle))<this.furyArc){const d=this._dmg(this.c.dmg*this.rFuryMult);e.hit(d,parts,'r','roll');score+=Math.floor(d);if(this.furyStun>0)e.stunT=Math.max(e.stunT||0,this.furyStun);if(this.lifesteal>0)this.heal(Math.floor(d*this.lifesteal));}});
@@ -2260,7 +2276,7 @@ class Player {
     if(this.arch){ if(this.xTimer>0||this.level<20)return; this.xTimer=this.arch.xCd*this.xCdM; track('casts_x'); if(typeof SFX!=='undefined')SFX.play('x'); this.castAnim=0.5; this.castCol=this.arch.color; spawnCastRune(this.castCol,1.5); this._pcx=this.x; this._pcy=this.y; this.arch.x(this,projs,parts); archPostCast(this,'x',projs,parts); return; }   // архетип: X открывается на 20 ур.
     if(this.xTimer>0||this.level<10) return;
     this.xTimer=this.c.xCd*this.xCdM; track('casts_x'); if(typeof SFX!=='undefined')SFX.play('x');
-    this.castAnim=0.5; this.castCol=this.classId==='swordsman'?'#88aaff':this.classId==='wizard'?'#ff5522':'#ffaa00';   // облик: вспышка умения
+    this.castAnim=0.5; this.castCol=this.classId==='swordsman'?'#88aaff':this.classId==='wizard'?'#ff5522':'#ffaa00'; spawnCastRune(this.castCol,1.5);   // облик: вспышка умения + рунный круг
     if(this.classId==='swordsman'){
       this.shieldMax=Math.floor(this.maxHp*this.shieldPct); this.shieldHp=this.shieldMax; this.shieldTimer=8;
       explodeAt(this.x,this.y,this._dmg(this.c.dmg*6.0),parts,220,0,'x',1.0);   // ульта бьёт: нова гнева (баланс: 2.2→6.0, r220, стан 1с — доля X была 0.5%)
@@ -2369,16 +2385,16 @@ const ET = {
   goblin:   {name:'Гоблин',     color:'#55cc44',hp:35, spd:128,dmg:10,r:14,xp:10, atkCd:1.0,atkR:28},
   skeleton: {name:'Скелет',     color:'#ccccaa',hp:60, spd:82, dmg:20,r:16,xp:20, atkCd:1.2,atkR:30},
   darkmage: {name:'Тёмный маг', color:'#9933cc',hp:55, spd:58, dmg:20,r:15,xp:30, atkCd:1.9,atkR:210,ranged:true},
-  troll:    {name:'Тролль',     color:'#775533',hp:1820,spd:52,dmg:30,r:52,xp:100,atkCd:1.8,atkR:44,boss:true},
+  troll:    {name:'Тролль',     color:'#775533',hp:2400,spd:52,dmg:30,r:52,xp:100,atkCd:1.8,atkR:44,boss:true},
   banshee:  {name:'Баньши',     color:'#66aaff',hp:40, spd:165,dmg:16,r:13,xp:25, atkCd:0.9,atkR:28},
   golem:    {name:'Голем',      color:'#aa8855',hp:140,spd:40, dmg:25,r:24,xp:50, atkCd:2.0,atkR:36},
   wraith:   {name:'Призрак',    color:'#cc44cc',hp:45, spd:95, dmg:18,r:14,xp:35, atkCd:1.5,atkR:200,ranged:true},
   cursed:   {name:'Проклятый',  color:'#6622aa',hp:2800,spd:34,dmg:50,r:40,xp:300,atkCd:2.6,atkR:52},
   // ── Боссы (идея 5) ──
-  lich:     {name:'Лич',         color:'#8844cc',hp:2200,spd:46,dmg:26,r:50,xp:380,atkCd:2.2,atkR:230,ranged:true,boss:true},   // щит-неуязвимость + призыв
-  titan:    {name:'Голем-Титан', color:'#9a8456',hp:3000,spd:34,dmg:34,r:60,xp:440,atkCd:2.0,atkR:48,boss:true},                // землетрясение + раскол
-  frostlord:{name:'Ледяной Владыка',color:'#5bc8f0',hp:2400,spd:42,dmg:24,r:54,xp:420,atkCd:2.2,atkR:240,ranged:true,boss:true},// поля заморозки + ледяная нова
-  golemlord:{name:'Голем-Владыка',color:'#cc4422',hp:11000,spd:40,dmg:36,r:72,xp:1200,atkCd:2.0,atkR:280,ranged:true,boss:true},// мега-босс: огонь/землетрясение/стан/рывок/щит
+  lich:     {name:'Лич',         color:'#8844cc',hp:2900,spd:46,dmg:26,r:50,xp:380,atkCd:2.2,atkR:230,ranged:true,boss:true},   // щит-неуязвимость + призыв
+  titan:    {name:'Голем-Титан', color:'#9a8456',hp:3900,spd:34,dmg:34,r:60,xp:440,atkCd:2.0,atkR:48,boss:true},                // землетрясение + раскол
+  frostlord:{name:'Ледяной Владыка',color:'#5bc8f0',hp:3100,spd:42,dmg:24,r:54,xp:420,atkCd:2.2,atkR:240,ranged:true,boss:true},// поля заморозки + ледяная нова
+  golemlord:{name:'Голем-Владыка',color:'#cc4422',hp:14000,spd:40,dmg:36,r:72,xp:1200,atkCd:2.0,atkR:280,ranged:true,boss:true},// мега-босс: огонь/землетрясение/стан/рывок/щит
   // ── Новые монстры с уникальными механиками ──
   charger:  {name:'Носорог',    color:'#cc7744',hp:95, spd:72, dmg:26,r:20,xp:45, atkCd:1.5,atkR:34, charger:true},   // телеграф + рывок
   splitter: {name:'Слизень',    color:'#66cc66',hp:70, spd:72, dmg:14,r:18,xp:30, atkCd:1.3,atkR:30, splitter:true},  // делится при смерти
@@ -3137,7 +3153,7 @@ canvas.addEventListener('click', () => {
     if(mouse.x>=20&&mouse.x<=140&&mouse.y>=560&&mouse.y<=594){state='menu';achConfirmReset=false;}
     else if(mouse.x>=660&&mouse.x<=780&&mouse.y>=560&&mouse.y<=594){ if(achConfirmReset){resetSave();achConfirmReset=false;}else achConfirmReset=true; }
   } else if(state==='forge'){
-    if(mouse.y>=48&&mouse.y<=76){ if(mouse.x>=112&&mouse.x<=222)forgeTab='craft'; else if(mouse.x>=228&&mouse.x<=394)forgeTab='unlock'; else if(mouse.x>=400&&mouse.x<=520)forgeTab='avatars'; else if(mouse.x>=526&&mouse.x<=674)forgeTab='archicons'; }   // вкладки: Кузница/Разблок./Аватары/Эмблемы
+    if(mouse.y>=48&&mouse.y<=76){ if(mouse.x>=250&&mouse.x<=400)forgeTab='craft'; else if(mouse.x>=410&&mouse.x<=580)forgeTab='unlock'; else if(mouse.x>=590&&mouse.x<=740)forgeTab='avatars'; }   // 🙂 третья вкладка
     if(mouse.x>=20&&mouse.x<=140&&mouse.y>=560&&mouse.y<=594){state='menu';forgeSel=null;}
     if(forgeTab==='craft'){
       for(let i=0;i<24;i++){const c=i%6,r=Math.floor(i/6),cx=28+c*62,cy=96+r*62; if(mouse.x>=cx&&mouse.x<=cx+56&&mouse.y>=cy&&mouse.y<=cy+56) forgeSel=meta.stash[i]?{loc:'stash',idx:i}:null;}
@@ -3150,9 +3166,6 @@ canvas.addEventListener('click', () => {
     } else if(forgeTab==='avatars'){   // 🙂 клик по ячейке: открытый — выбрать и сохранить, залоченный — игнор
       for(let i=0;i<AVATARS.length;i++){ const c=i%10,r=Math.floor(i/10),cx=44+c*72,cy=98+r*76;
         if(mouse.x>=cx&&mouse.x<=cx+64&&mouse.y>=cy&&mouse.y<=cy+64){ if(avatarUnlocked(AVATARS[i])){ meta.avatar=i; saveSave(); if(typeof SFX!=='undefined')SFX.play('pickup'); } break; } }
-    } else if(forgeTab==='archicons'){   // ⭐ клик по эмблеме: не куплена и хватает золота → покупка
-      for(let i=0;i<9;i++){ const e=ARCH_EMBLEMS[i], col=i%3,row=Math.floor(i/3),cx=96+col*220,cy=112+row*138,S=116;
-        if(mouse.x>=cx&&mouse.x<=cx+S&&mouse.y>=cy&&mouse.y<=cy+S){ if(!archIconOwned(e.key)&&(meta.gold||0)>=ARCH_ICON_PRICE){ meta.gold-=ARCH_ICON_PRICE; if(!meta.archIcons)meta.archIcons={}; meta.archIcons[e.key]=1; saveSave(); if(typeof SFX!=='undefined')SFX.play('gold'); } break; } }
     } else {
       if(mouse.x>=60&&mouse.x<=260&&mouse.y>=128&&mouse.y<=158&&!meta.unlocks.accessory&&(meta.gold||0)>=500){meta.gold-=500;meta.unlocks.accessory=true;saveSave();}
       [0,1,2,3,4,5].forEach((s,k)=>{const sx=60+k*86,sy=228; if(mouse.x>=sx&&mouse.x<=sx+64&&mouse.y>=sy&&mouse.y<=sy+46){ if(s===0||meta.unlocks.skins.includes(s)){meta.unlocks.skin=s;saveSave();} else if((meta.gold||0)>=200){meta.gold-=200;meta.unlocks.skins.push(s);meta.unlocks.skin=s;saveSave();} }});
@@ -3692,127 +3705,6 @@ function drawAvatarsTab(){   // вкладка «Аватары» в кузни�
   ctx.fillStyle='#667'; ctx.font='10px Segoe UI'; ctx.fillText('Рамка = редкость аватара · клик по открытому — выбрать',96,542);
 }
 
-// ── ⭐ Эмблемы архетипов (2026-07-05): косметические процедурные иконки, покупка за 500🪙 ──
-// meta.archIcons={key:1} — купленные. Архетипы БЕСПЛАТНЫ (это только косметика вида иконки).
-// Реюз avGlow/avPoly/shade/_rgba. Мотивы рисуются в лок. системе -50..50 (как AV_MOTIF).
-const ARCH_ICON_PRICE=500;
-const ARCH_EMBLEMS=[   // порядок = сетка магазина (ряд = класс)
-  {key:'berserk',  name:'Берсерк',    C:['#ff5a3a','#4a1510','#ffb060']},
-  {key:'duelist',  name:'Дуэлянт',    C:['#4ff0f0','#0f3a3a','#bffcff']},
-  {key:'guardian', name:'Страж',      C:['#9fb6c8','#28323e','#e6f0fa']},
-  {key:'elements', name:'Стихии',     C:['#ff9a44','#3a2010','#ffd090']},
-  {key:'arcane',   name:'Аркан',      C:['#bb66ff','#2a103a','#e0b0ff']},
-  {key:'summoner', name:'Призыватель',C:['#55ee88','#103a24','#b0ffcc']},
-  {key:'sniper',   name:'Снайпер',    C:['#ffd24a','#3a2e10','#fff0a0']},
-  {key:'hunter',   name:'Ловчий',     C:['#a8c860','#253010','#d8f0a0']},
-  {key:'whirl',    name:'Шквал',      C:['#d8e0e8','#303840','#ffffff']},
-];
-const ARCH_EMBLEM_BY_KEY={}; ARCH_EMBLEMS.forEach(e=>ARCH_EMBLEM_BY_KEY[e.key]=e);
-function archIconOwned(key){ return !!(meta&&meta.archIcons&&meta.archIcons[key]); }
-const ARCH_MOTIF={
-  berserk(g,C){ avGlow(g,0,0,42,C[2],0.22);
-    const axe=s=>{ g.save(); g.rotate(s*0.42);
-      g.strokeStyle='#6b4a2a'; g.lineWidth=5; g.beginPath(); g.moveTo(0,34); g.lineTo(0,-32); g.stroke();
-      g.strokeStyle='#3a2814'; g.lineWidth=2; g.beginPath(); g.moveTo(0,34); g.lineTo(0,-32); g.stroke();
-      g.fillStyle=C[0]; g.beginPath(); g.moveTo(1,-32); g.quadraticCurveTo(32,-36,36,-6); g.quadraticCurveTo(30,-16,1,-14); g.closePath(); g.fill();
-      g.fillStyle=shade(C[0],0.34); g.beginPath(); g.moveTo(1,-30); g.quadraticCurveTo(24,-32,27,-16); g.lineTo(1,-15); g.closePath(); g.fill();
-      g.strokeStyle=shade(C[0],-0.5); g.lineWidth=1.5; g.beginPath(); g.moveTo(1,-32); g.quadraticCurveTo(32,-36,36,-6); g.stroke();
-      g.fillStyle='#d8c088'; g.beginPath(); g.arc(0,-32,3,0,6.284); g.fill(); g.restore(); };
-    axe(1); axe(-1);
-    g.fillStyle=C[2]; [[-9,24,3],[7,30,2.4],[-1,36,2]].forEach(([x,y,r])=>{ avGlow(g,x,y,r*2.4,C[2],0.5); g.beginPath(); g.arc(x,y,r,0,6.284); g.fill(); }); },
-  duelist(g,C){ avGlow(g,0,0,42,C[2],0.24);
-    const rap=s=>{ g.save(); g.rotate(s*0.52);
-      g.strokeStyle=shade(C[0],0.1); g.lineWidth=3; g.beginPath(); g.moveTo(0,30); g.lineTo(0,-40); g.stroke();
-      g.strokeStyle='#eaffff'; g.lineWidth=1; g.beginPath(); g.moveTo(-0.6,28); g.lineTo(-0.6,-38); g.stroke();
-      g.fillStyle='#c8a24a'; g.beginPath(); g.ellipse(0,22,7,3.4,0,0,6.284); g.fill();
-      g.strokeStyle='#c8a24a'; g.lineWidth=2; g.beginPath(); g.arc(0,26,6,-0.4,Math.PI+0.4); g.stroke();
-      g.fillStyle='#8a6a30'; g.fillRect(-2,28,4,8); g.restore(); };
-    rap(1); rap(-1);
-    g.strokeStyle=_rgba(C[2],0.55); g.lineWidth=1.5; g.beginPath(); g.arc(0,-4,14,0,6.284); g.stroke();
-    g.fillStyle=C[2]; g.beginPath(); g.arc(0,-4,4,0,6.284); g.fill(); avGlow(g,0,-4,12,C[2],0.5); },
-  guardian(g,C){ avGlow(g,0,0,42,C[2],0.2);
-    avPoly(g,[[-26,-34],[26,-34],[26,10],[0,40],[-26,10]],C[0],shade(C[0],-0.5),3);
-    g.fillStyle=shade(C[0],0.25); g.fillRect(-26,-34,52,10);
-    g.fillStyle=shade(C[0],-0.32); g.fillRect(-5,-30,10,52); g.fillRect(-20,-8,40,10);
-    g.fillStyle=C[2]; [[-20,-28],[20,-28],[0,30]].forEach(([x,y])=>{ g.beginPath(); g.arc(x,y,3,0,6.284); g.fill(); avGlow(g,x,y,7,C[2],0.5); });
-    avPoly(g,[[-20,-28],[20,-28],[20,7],[0,33],[-20,7]],null,_rgba('#ffffff',0.4),1.5); },
-  elements(g,C){ avGlow(g,0,0,42,C[2],0.22);
-    g.fillStyle='#ff5a1e'; g.beginPath(); g.arc(0,0,26,-Math.PI/2,Math.PI/2); g.closePath(); g.fill();
-    g.fillStyle='#ffb050'; g.beginPath(); g.arc(6,-4,10,0,6.284); g.fill();
-    g.fillStyle='#3aa0e0'; g.beginPath(); g.arc(0,0,26,Math.PI/2,-Math.PI/2,true); g.closePath(); g.fill();
-    g.fillStyle='#bfeaff'; g.beginPath(); g.arc(-6,4,9,0,6.284); g.fill();
-    g.strokeStyle='#fff'; g.lineWidth=2; g.beginPath(); g.moveTo(0,-26); g.lineTo(0,26); g.stroke();
-    g.fillStyle='#ff7a2a'; g.beginPath(); g.moveTo(8,-24); g.quadraticCurveTo(20,-40,10,-46); g.quadraticCurveTo(16,-34,6,-26); g.closePath(); g.fill();
-    g.fillStyle='#cfeeff'; g.beginPath(); g.moveTo(-10,24); g.lineTo(-6,44); g.lineTo(-2,24); g.closePath(); g.fill();
-    g.strokeStyle=shade(C[0],-0.3); g.lineWidth=2; g.beginPath(); g.arc(0,0,26,0,6.284); g.stroke(); },
-  arcane(g,C){ avGlow(g,0,0,44,C[2],0.28);
-    g.strokeStyle=C[0]; g.lineWidth=3; g.beginPath(); for(let i=0;i<66;i++){ const a=i*0.32,r=2+i*0.48,x=Math.cos(a)*r,y=Math.sin(a)*r; i?g.lineTo(x,y):g.moveTo(x,y);} g.stroke();
-    g.strokeStyle=_rgba(C[2],0.7); g.lineWidth=1.2; g.beginPath(); for(let i=0;i<58;i++){ const a=i*0.32+0.2,r=2+i*0.48,x=Math.cos(a)*r,y=Math.sin(a)*r; i?g.lineTo(x,y):g.moveTo(x,y);} g.stroke();
-    g.fillStyle=C[2]; for(let k=0;k<6;k++){ const a=k/6*6.284,x=Math.cos(a)*38,y=Math.sin(a)*38; g.save(); g.translate(x,y); g.rotate(a); g.fillRect(-1.5,-5,3,10); g.fillRect(-4,-1.5,8,3); g.restore(); }
-    g.fillStyle='#fff'; g.beginPath(); g.arc(0,0,3,0,6.284); g.fill(); avGlow(g,0,0,10,'#fff',0.6); },
-  summoner(g,C){ avGlow(g,0,0,42,C[2],0.24);
-    g.strokeStyle=_rgba(C[2],0.6); g.lineWidth=2; g.beginPath(); g.arc(0,4,36,0,6.284); g.stroke();
-    g.fillStyle=C[2]; for(let k=0;k<5;k++){ const a=k/5*6.284-1.57,x=Math.cos(a)*36,y=4+Math.sin(a)*36; g.beginPath(); g.arc(x,y,2.4,0,6.284); g.fill(); }
-    g.fillStyle=C[0]; g.beginPath(); g.arc(0,-4,18,Math.PI,0); g.quadraticCurveTo(18,10,10,12); g.lineTo(8,22); g.quadraticCurveTo(0,18,-8,22); g.lineTo(-10,12); g.quadraticCurveTo(-18,10,-18,-4); g.closePath(); g.fill();
-    g.fillStyle=shade(C[0],-0.6); [[-7,-2],[7,-2]].forEach(([x,y])=>{ g.beginPath(); g.arc(x,y,4.5,0,6.284); g.fill(); avGlow(g,x,y,6,C[2],0.8); });
-    g.fillStyle=C[2]; [[-7,-2],[7,-2]].forEach(([x,y])=>{ g.beginPath(); g.arc(x,y,2,0,6.284); g.fill(); });
-    g.fillStyle=_rgba(C[0],0.5); g.beginPath(); g.moveTo(-8,20); g.quadraticCurveTo(0,40,8,20); g.closePath(); g.fill(); },
-  sniper(g,C){ avGlow(g,0,0,42,C[2],0.22);
-    [30,21,12].forEach((r,i)=>{ g.strokeStyle=i%2?C[0]:shade(C[0],-0.3); g.lineWidth=3; g.beginPath(); g.arc(0,0,r,0,6.284); g.stroke(); });
-    g.fillStyle=C[2]; g.beginPath(); g.arc(0,0,5,0,6.284); g.fill(); avGlow(g,0,0,10,C[2],0.6);
-    g.strokeStyle=_rgba(C[2],0.8); g.lineWidth=1.5; [[-40,0,-34,0],[34,0,40,0],[0,-40,0,-34],[0,34,0,40]].forEach(([a,b,c,d])=>{ g.beginPath(); g.moveTo(a,b); g.lineTo(c,d); g.stroke(); });
-    g.save(); g.rotate(-0.78); g.strokeStyle='#caa24a'; g.lineWidth=2.4; g.beginPath(); g.moveTo(0,34); g.lineTo(0,-30); g.stroke();
-    g.fillStyle='#e8d8a0'; g.beginPath(); g.moveTo(0,-38); g.lineTo(-5,-28); g.lineTo(5,-28); g.closePath(); g.fill();
-    g.strokeStyle='#caa24a'; g.lineWidth=2; g.beginPath(); g.moveTo(-5,34); g.lineTo(0,28); g.lineTo(5,34); g.stroke(); g.restore(); },
-  hunter(g,C){ avGlow(g,0,0,42,C[2],0.22);
-    g.fillStyle=C[0]; g.beginPath(); g.ellipse(0,12,16,13,0,0,6.284); g.fill();
-    [[-16,-8,6],[-6,-16,6.5],[6,-16,6.5],[16,-8,6]].forEach(([x,y,r])=>{ g.beginPath(); g.arc(x,y,r,0,6.284); g.fill(); });
-    g.fillStyle=shade(C[0],0.28); g.beginPath(); g.ellipse(-4,8,7,6,0,0,6.284); g.fill();
-    g.fillStyle='#f0f0e0'; g.beginPath(); g.moveTo(0,-28); g.quadraticCurveTo(7,-10,2,10); g.quadraticCurveTo(0,14,-2,10); g.quadraticCurveTo(-7,-10,0,-28); g.closePath(); g.fill();
-    g.fillStyle=_rgba(C[2],0.5); g.beginPath(); g.moveTo(-1,-26); g.quadraticCurveTo(3,-8,0,6); g.quadraticCurveTo(-4,-8,-1,-26); g.closePath(); g.fill(); },
-  whirl(g,C){ avGlow(g,0,0,42,C[2],0.22);
-    for(let k=0;k<3;k++){ g.save(); g.rotate(k/3*6.284);
-      g.fillStyle=C[0]; g.beginPath(); g.moveTo(0,-6); g.quadraticCurveTo(28,-14,40,4); g.quadraticCurveTo(26,-2,6,4); g.closePath(); g.fill();
-      g.fillStyle=shade(C[0],0.35); g.beginPath(); g.moveTo(2,-5); g.quadraticCurveTo(24,-11,34,2); g.lineTo(6,2); g.closePath(); g.fill();
-      g.strokeStyle=shade(C[0],-0.4); g.lineWidth=1.2; g.beginPath(); g.moveTo(0,-6); g.quadraticCurveTo(28,-14,40,4); g.stroke(); g.restore(); }
-    g.strokeStyle=_rgba(C[2],0.55); g.lineWidth=1.5; [46,38].forEach(r=>{ g.beginPath(); g.arc(0,0,r,0.3,2.2); g.stroke(); });
-    g.fillStyle='#fff'; g.beginPath(); g.arc(0,0,4,0,6.284); g.fill(); avGlow(g,0,0,10,'#fff',0.5); },
-};
-function _octPath(g,inset,cut){ const a=inset,b=100-inset,c=cut; g.beginPath(); g.moveTo(a+c,a); g.lineTo(b-c,a); g.lineTo(b,a+c); g.lineTo(b,b-c); g.lineTo(b-c,b); g.lineTo(a+c,b); g.lineTo(a,b-c); g.lineTo(a,a+c); g.closePath(); }
-function archEmblemRender(g,size,e){ const C=e.C; g.save(); g.scale(size/100,size/100);
-  const bg=g.createRadialGradient(50,44,6,50,52,66); bg.addColorStop(0,shade(C[1],0.3)); bg.addColorStop(1,shade(C[1],-0.55)); g.fillStyle=bg; _octPath(g,2,15); g.fill();
-  g.save(); _octPath(g,2,15); g.clip();
-  g.save(); g.translate(50,50); g.globalAlpha=0.13; g.fillStyle=C[2]; for(let i=0;i<12;i++){ g.rotate(Math.PI/6); g.beginPath(); g.moveTo(0,0); g.lineTo(-5,-64); g.lineTo(5,-64); g.closePath(); g.fill(); } g.restore(); g.globalAlpha=1;
-  const rg=g.createRadialGradient(50,48,4,50,50,56); rg.addColorStop(0,_rgba(C[2],0.34)); rg.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=rg; g.fillRect(0,0,100,100);
-  g.save(); g.translate(50,52); g.scale(0.82,0.82); (ARCH_MOTIF[e.key]||function(){})(g,C); g.restore();
-  g.restore();
-  g.strokeStyle=shade(C[0],-0.4); g.lineWidth=6; _octPath(g,3,15); g.stroke();
-  g.strokeStyle=C[0]; g.lineWidth=3; _octPath(g,3,15); g.stroke();
-  g.strokeStyle=_rgba(C[2],0.6); g.lineWidth=1.4; _octPath(g,8,13); g.stroke();
-  g.restore(); }
-const ARCH_EMBLEM_CACHE={};
-function drawArchEmblem(c2,x,y,size,key){ const e=ARCH_EMBLEM_BY_KEY[key]; if(!e)return; const ck=key+'_'+size; let cv=ARCH_EMBLEM_CACHE[ck];
-  if(!cv){ cv=document.createElement('canvas'); const px=Math.max(64,Math.round(size*2)); cv.width=cv.height=px; archEmblemRender(cv.getContext('2d'),px,e); ARCH_EMBLEM_CACHE[ck]=cv; }
-  c2.drawImage(cv,Math.round(x),Math.round(y),size,size); }
-function drawArchIconsTab(){   // магазин эмблем (кузница, вкладка «⭐ Эмблемы»)
-  ctx.fillStyle='#99a'; ctx.font='11px Segoe UI'; ctx.fillText('Эмблемы архетипов — сияющие иконки для экрана выбора и HUD · '+ARCH_ICON_PRICE+'🪙 каждая · сами архетипы бесплатны',28,90);
-  const CLS=['Мечник','Волшебник','Лучник']; let hov=null;
-  for(let i=0;i<9;i++){ const e=ARCH_EMBLEMS[i], col=i%3, row=Math.floor(i/3), cx=96+col*220, cy=112+row*138, S=116;
-    if(col===0){ ctx.save(); ctx.translate(30,cy+S/2); ctx.rotate(-Math.PI/2); ctx.fillStyle='#5b5675'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center'; ctx.fillText(CLS[row],0,0); ctx.restore(); ctx.textAlign='left'; }
-    const owned=archIconOwned(e.key), hovered=mouse.x>=cx&&mouse.x<=cx+S&&mouse.y>=cy&&mouse.y<=cy+S; if(hovered)hov=e;
-    drawArchEmblem(ctx,cx,cy,S,e.key);
-    if(!owned){ ctx.fillStyle='rgba(4,3,8,0.6)'; ctx.fillRect(cx,cy,S,S); const can=(meta.gold||0)>=ARCH_ICON_PRICE; ctx.fillStyle=can?'#ffd24a':'#aa7766'; ctx.font='bold 14px Segoe UI'; ctx.textAlign='center'; ctx.fillText((can?'🔓 ':'🔒 ')+ARCH_ICON_PRICE+'🪙',cx+S/2,cy+S/2+5); ctx.textAlign='left'; }
-    else { ctx.fillStyle='#7dff9d'; ctx.font='bold 15px Segoe UI'; ctx.textAlign='right'; ctx.fillText('✓',cx+S-8,cy+18); ctx.textAlign='left'; }
-    ctx.fillStyle=hovered?'#fff':'#b6b6c8'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center'; ctx.fillText(e.name,cx+S/2,cy+S+16); ctx.textAlign='left';
-    if(hovered){ ctx.strokeStyle=owned?'#7dff9d':'#ffd24a'; ctx.lineWidth=2; ctx.strokeRect(cx-2,cy-2,S+4,S+4); }
-  }
-  pxPanel(28,502,758,44,'rgba(12,10,20,0.95)','#33304a');
-  if(hov){ drawArchEmblem(ctx,36,506,36,hov.key); const owned=archIconOwned(hov.key);
-    ctx.fillStyle=owned?'#7dff9d':'#e2e2ee'; ctx.font='bold 13px Segoe UI'; ctx.fillText('Эмблема «'+hov.name+'»',82,522);
-    ctx.font='11px Segoe UI'; ctx.fillStyle=owned?'#7fe6a0':'#ffd24a'; ctx.fillText(owned?'✓ Открыта — показывается на карточке выбора архетипа и в HUD':'Клик — купить за '+ARCH_ICON_PRICE+'🪙 (нужно золото с вех)',82,538); }
-  else { ctx.fillStyle='#667'; ctx.font='11px Segoe UI'; ctx.textAlign='center'; ctx.fillText('Наведи на эмблему — детали · купленная показывается на выборе архетипа (15 ур.) и в HUD',400,526); ctx.textAlign='left'; }
-}
-
 // ── Онбординг: интерактивный туториал первого забега + одноразовые подсказки (2026-07-04) ──
 let TUT=null, tipQueue=[];   // TUT — активный туториал (null = выключен) · tipQueue — очередь контекст-подсказок
 function tipOnce(id,txt,sub){ if(!meta)return; if(!meta.tips)meta.tips={}; if(meta.tips[id])return; meta.tips[id]=1;
@@ -3964,8 +3856,7 @@ function drawHUD(){
   drawAvatar(ctx,21,7,36,(meta&&meta.avatar)||0);   // 🙂 аватар профиля вместо кружка с буквой класса
   pxPanel(12,44,54,15,'rgba(8,7,15,0.92)',badgeCol);   // px-плашка уровня (кромка = цвет класса/архетипа)
   ctx.fillStyle='#ffcc44';ctx.font='bold 10px Segoe UI';ctx.textAlign='center';ctx.fillText('Lv'+player.level,39,55);ctx.textAlign='left';
-  if(player.arch){ ctx.fillStyle=badgeCol;ctx.font='bold 9px Segoe UI';ctx.textAlign='center';ctx.shadowColor='#000';ctx.shadowBlur=2;ctx.fillText(player.arch.name,39,66);ctx.shadowBlur=0;ctx.textAlign='left';
-    if(player.archetype&&archIconOwned(player.archetype)){ ctx.save();ctx.shadowColor=badgeCol;ctx.shadowBlur=8; drawArchEmblem(ctx,49,1,22,player.archetype); ctx.restore(); } }   // ⭐ купленная эмблема — печать-пин на портрете
+  if(player.arch){ ctx.fillStyle=badgeCol;ctx.font='bold 9px Segoe UI';ctx.textAlign='center';ctx.shadowColor='#000';ctx.shadowBlur=2;ctx.fillText(player.arch.name,39,66);ctx.shadowBlur=0;ctx.textAlign='left'; }   // тег архетипа под бейджем
   // #3: главная шкала опыта — сверху слева, рядом с бейджем
   const xbx=76,xby=14,xbw=234,xbh=18,xf=clamp(player.xpDisplay/player.xpNext,0,1);
   ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(xbx-3,xby-3,xbw+6,xbh+6);
@@ -4156,12 +4047,10 @@ function drawForge(){
   const _fT=Date.now()/1000;   // время для анимации иконок (r5 искры/лучи, уник-пламя)
   ctx.fillStyle='#ffcc44';ctx.font='bold 24px Segoe UI';ctx.textAlign='center';ctx.fillText('⚒ КУЗНИЦА',400,30);
   ctx.fillStyle='#ffd24a';ctx.font='bold 16px Segoe UI';ctx.textAlign='right';ctx.fillText('🪙 '+(meta.gold||0),786,28);ctx.textAlign='left';
-  btn(112,48,110,28, forgeTab==='craft'?'▸ Кузница':'Кузница', forgeTab==='craft'?'#3a2e10':'#1a1a26', forgeTab==='craft'?'#ffaa33':'#445566');
-  btn(228,48,166,28, forgeTab==='unlock'?'▸ Разблокировки':'Разблокировки', forgeTab==='unlock'?'#2a2440':'#1a1a26', forgeTab==='unlock'?'#9977dd':'#445566');
-  btn(400,48,120,28, forgeTab==='avatars'?'▸ Аватары':'Аватары', forgeTab==='avatars'?'#10262a':'#1a1a26', forgeTab==='avatars'?'#44ccaa':'#445566');   // 🙂 вкладка аватаров
-  btn(526,48,148,28, forgeTab==='archicons'?'▸ ⭐ Эмблемы':'⭐ Эмблемы', forgeTab==='archicons'?'#2a1f10':'#1a1a26', forgeTab==='archicons'?'#ffbb44':'#445566');   // ⭐ вкладка эмблем архетипов
+  btn(250,48,150,28, forgeTab==='craft'?'▸ Кузница':'Кузница', forgeTab==='craft'?'#3a2e10':'#1a1a26', forgeTab==='craft'?'#ffaa33':'#445566');
+  btn(410,48,170,28, forgeTab==='unlock'?'▸ Разблокировки':'Разблокировки', forgeTab==='unlock'?'#2a2440':'#1a1a26', forgeTab==='unlock'?'#9977dd':'#445566');
+  btn(590,48,150,28, forgeTab==='avatars'?'▸ Аватары':'Аватары', forgeTab==='avatars'?'#10262a':'#1a1a26', forgeTab==='avatars'?'#44ccaa':'#445566');   // 🙂 вкладка аватаров
   if(forgeTab==='avatars'){ drawAvatarsTab(); btn(20,560,120,34,'← Меню','#262244','#4455aa'); return; }
-  if(forgeTab==='archicons'){ drawArchIconsTab(); btn(20,560,120,34,'← Меню','#262244','#4455aa'); return; }
   if(forgeTab==='craft'){
     ctx.fillStyle='#99a';ctx.font='11px Segoe UI';ctx.fillText('Сундук (стэш '+meta.stash.length+'/24)',28,90);
     for(let i=0;i<24;i++){const c=i%6,r=Math.floor(i/6),cx=28+c*62,cy=96+r*62,it=meta.stash[i],sd=forgeSel&&forgeSel.loc==='stash'&&forgeSel.idx===i;
@@ -4371,10 +4260,9 @@ function drawArchSel(){
     const hov=mouse.x>=cx&&mouse.x<=cx+cw&&mouse.y>=cy&&mouse.y<=cy+ch;
     pxPanel(cx,cy,cw,ch,hov?'rgba(30,22,50,0.97)':'rgba(16,12,28,0.95)',hov?arch.color:'#3a3560'); pxRivets(cx,cy,cw,ch,hov?arch.color:'#3a3560');
     if(hov){ctx.save();ctx.shadowColor=arch.color;ctx.shadowBlur=18;ctx.strokeStyle=arch.color;ctx.lineWidth=2;ctx.strokeRect(cx+3,cy+3,cw-6,ch-6);ctx.restore();ctx.shadowBlur=0;}
-    if(archIconOwned(k)){ ctx.save();ctx.shadowColor=arch.color;ctx.shadowBlur=18; drawArchEmblem(ctx,cx+92-33,cy+46-33,66,k); ctx.restore(); }   // ⭐ купленная эмблема вместо эмодзи-кружка
-    else { ctx.shadowColor=arch.color;ctx.shadowBlur=20;ctx.fillStyle=arch.color;ctx.beginPath();ctx.arc(cx+92,cy+46,32,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-      ctx.fillStyle='rgba(0,0,0,0.5)';ctx.beginPath();ctx.arc(cx+92,cy+46,32,0,Math.PI*2);ctx.fill();
-      ctx.font='28px Segoe UI';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(arch.icon||'✦',cx+92,cy+57); }
+    ctx.shadowColor=arch.color;ctx.shadowBlur=20;ctx.fillStyle=arch.color;ctx.beginPath();ctx.arc(cx+92,cy+46,32,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.beginPath();ctx.arc(cx+92,cy+46,32,0,Math.PI*2);ctx.fill();
+    ctx.font='28px Segoe UI';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(arch.icon||'✦',cx+92,cy+57);
     ctx.fillStyle='#fff';ctx.font='bold 16px Segoe UI';ctx.fillText(arch.name,cx+92,cy+94);
     ctx.strokeStyle=arch.color;ctx.globalAlpha=0.5;ctx.beginPath();ctx.moveTo(cx+14,cy+104);ctx.lineTo(cx+cw-14,cy+104);ctx.stroke();ctx.globalAlpha=1;
     const abil=[['ЛКМ',arch.lmbName],['Q',arch.qName],['E',arch.eName],['R',arch.rName],['X (20 ур.)',arch.xName],['Пассив ×3 ЛКМ',arch.passiveDesc||'—']];
@@ -4473,7 +4361,7 @@ const TREE_SLOT_PREFIX={
 function _slotUp(p,slot){ const prefs=(TREE_SLOT_PREFIX[p.classId]||{})[slot]||[]; if(!prefs.length)return 'нет апгрейдов'; const tree=SKILL_TREES[p.classId]; let tot=0,tak=0; tree.forEach(u=>{ if(prefs.some(pf=>u.id.indexOf(pf)===0)){ tot++; if(p.takenSkills.has(u.id))tak++; } }); return 'апгрейды '+tak+'/'+tot; }
 function drawTestInfo(){
   const p=player; if(!p)return;
-  const D=n=>Math.round(p.c.dmg*n*p.dmgM*(p.archM||1)*(p.arch&&p.arch.dmgMul||1));   // отображаемый урон = как _dmg (учитывает archM и пер-архетип буст)
+  const D=n=>Math.round(p.c.dmg*n*p.dmgM);
   const col=p.arch?p.arch.color:p.c.color;
   let rows;
   if(p.arch){
