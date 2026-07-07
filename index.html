@@ -21,26 +21,34 @@ canvas { display: block; border: 2px solid #2a2535; box-shadow: 0 0 40px rgba(10
   #ctrl { display: none; }
   canvas { border: none; box-shadow: none; width: min(100vw, 177.7vh); width: min(100dvw, 177.7dvh); }
 }
-/* Портрет на телефоне — 16:9 слишком мелкий, просим повернуть в ландшафт */
-#rotate { display: none; position: fixed; inset: 0; z-index: 30; background: #050508; color: #9977ff; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
-#rotate .ico { font-size: 60px; animation: rot 2.4s ease-in-out infinite; }
-#rotate .t { font-size: 20px; font-weight: bold; color: #b39cff; }
-#rotate .s { font-size: 13px; color: #7766aa; max-width: 78vw; line-height: 1.5; }
-@keyframes rot { 0%,42% { transform: rotate(0deg); } 60%,100% { transform: rotate(-90deg); } }
-@media (pointer: coarse) and (orientation: portrait) {
-  canvas { display: none; }
-  #rotate { display: flex; }
-}
+/* Портрет на телефоне: игра ОСТАЁТСЯ видимой (letterbox по ширине); подсказка — компактный НЕблокирующий
+   нижний баннер. НЕ прячем канвас (иначе при блокировке автоповорота телефон навсегда застревал на плашке). */
+#rotate { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 30; padding: 8px 10px; background: rgba(14,10,24,0.92); border: 1px solid #3a3454; border-radius: 8px; align-items: center; gap: 10px; }
+#rotate .ico { font-size: 22px; animation: rot 2.4s ease-in-out infinite; }
+#rotate .txt { font-size: 11.5px; color: #b39cff; line-height: 1.35; flex: 1; }
+#rotate .fs { font-size: 12px; font-weight: bold; color: #0a0814; background: #ffcc44; border: none; border-radius: 6px; padding: 8px 10px; white-space: nowrap; }
+@keyframes rot { 0%,45% { transform: rotate(0deg); } 60%,100% { transform: rotate(-90deg); } }
+@media (pointer: coarse) and (orientation: portrait) { #rotate { display: flex; } }
 </style>
 </head>
 <body>
 <canvas id="c" width="1280" height="720"></canvas>
-<div id="rotate"><div class="ico">📱</div><div class="t">Поверни телефон</div><div class="s">AVALO — широкоформатная игра 16:9. Разверни устройство в ландшафт, чтобы играть на весь экран.</div></div>
+<div id="rotate"><span class="ico">📱</span><span class="txt">Поверни в ландшафт для полного экрана. Играть можно и так.</span><button class="fs" id="rotfs">⛶ Во весь экран</button></div>
 <div id="ctrl">WASD — движение &nbsp;|&nbsp; ЛКМ — атака &nbsp;|&nbsp; Q / E / R — умения &nbsp;|&nbsp; X — X-способность (Lv10) &nbsp;|&nbsp; P — пауза &nbsp;|&nbsp; M — звук &nbsp;|&nbsp; 📱 тач: левый стик — движение, правый — прицел/огонь, кнопки умений справа</div>
 <script>
 'use strict';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+// ── Мобильный фуллскрин + автоповорот (2026-07-05): по первому касанию прячем адресную строку и
+//    поворачиваем в ландшафт (Android). iOS не поддерживает — там игра просто остаётся играбельной. ──
+(function(){ let fsDone=false;
+  function lockLandscape(){ try{ if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(function(){}); }catch(e){} }
+  function goFullscreen(){ const el=document.documentElement, rq=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen; if(rq){ try{ const p=rq.call(el); if(p&&p.then)p.then(lockLandscape,lockLandscape); else setTimeout(lockLandscape,60); }catch(e){ lockLandscape(); } } else lockLandscape(); }
+  function firstGesture(){ if(fsDone)return; fsDone=true; if(window.matchMedia&&matchMedia('(pointer: coarse)').matches)goFullscreen(); }
+  window.addEventListener('touchend',firstGesture,{passive:true});
+  window.addEventListener('mousedown',firstGesture);
+  const b=document.getElementById('rotfs'); if(b)b.addEventListener('click',function(e){ e.stopPropagation(); fsDone=true; goFullscreen(); });
+})();
 // ── Редизайн 2026-06-19: широкий экран ──────────────────────────────────────
 // VW×VH — канвас (1280×720). Все МЕНЮ-экраны остаются свёрстанными в 800×600 и
 // рендерятся через UI-слой (uiBegin/uiEnd) по центру с масштабом UI_S; мышь для
