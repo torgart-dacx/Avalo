@@ -3187,8 +3187,7 @@ canvas.addEventListener('click', () => {
     if(mouse.x>=70&&mouse.x<=280&&mouse.y>=478&&mouse.y<=518){treeSel=null;state='skilltree';}   // 🌳 мета-древо Зари
     if(mouse.x>=295&&mouse.x<=505&&mouse.y>=478&&mouse.y<=518){trialsRefresh();state='trials';}   // 📜 испытания/дейлики
     if(mouse.x>=520&&mouse.x<=730&&mouse.y>=478&&mouse.y<=518){gameMode='testroom';state='select';}   // 🧪 тренировочная комната
-    if(mouse.x>=600&&mouse.x<=790&&mouse.y>=18&&mouse.y<=48){DEV=!DEV;}   // #4: тумблер dev/prod
-    if(mouse.x>=10&&mouse.x<=200&&mouse.y>=18&&mouse.y<=48){ if(typeof SFX!=='undefined'){SFX.ensure();SFX.toggle();} }   // тумблер звука
+    if(mouse.x>=600&&mouse.x<=790&&mouse.y>=18&&mouse.y<=48){ if(typeof SFX!=='undefined'){SFX.ensure();SFX.toggle();} }   // тумблер звука (перенесён в правый угол; PROD-тумблер убран)
   } else if(state==='achievements'){
     if(mouse.x>=20&&mouse.x<=140&&mouse.y>=560&&mouse.y<=594){state='menu';achConfirmReset=false;}
     else if(mouse.x>=660&&mouse.x<=780&&mouse.y>=560&&mouse.y<=594){ if(achConfirmReset){resetSave();achConfirmReset=false;}else achConfirmReset=true; }
@@ -4132,12 +4131,11 @@ function drawMenu(){
   btn(295,478,210,40,'📜 Испытания','#241c0e','#bb9944');
   if(typeof trialsHasClaim==='function'&&trialsHasClaim()){ ctx.fillStyle='#ff4444'; ctx.beginPath(); ctx.arc(497,484,7,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='center'; ctx.fillText('!',497,488); ctx.textAlign='left'; }   // бейдж незабранной награды
   btn(520,478,210,40,'🧪 Тренировка','#1d2a1d','#66aa66');
-  btn(600,18,190,30, DEV?'⚙ DEV-режим: ВКЛ':'⚙ Режим: PROD', DEV?'#3a2a10':'#1a1a26', DEV?'#ffaa33':'#445566');
-  btn(10,18,190,30, SFX.isOn()?'🔊 Звук: ВКЛ':'🔇 Звук: ВЫКЛ', SFX.isOn()?'#13241a':'#241313', SFX.isOn()?'#66bb88':'#bb6666');
+  btn(600,18,190,30, SFX.isOn()?'🔊 Звук: ВКЛ':'🔇 Звук: ВЫКЛ', SFX.isOn()?'#13241a':'#241313', SFX.isOn()?'#66bb88':'#bb6666');   // звук перенесён в правый угол; PROD-тумблер убран
   ctx.globalAlpha=1;
   ctx.fillStyle='#8888aa';ctx.font='12px Segoe UI';ctx.textAlign='center';
   const _pf=`Профиль ур. ${profileLevel()}  ·  ${ACHIEVEMENTS.reduce((s,a)=>s+(((meta.ach[a.id]||{}).lvl||0)>0?1:0),0)}/75 достижений  ·  🪙 ${meta.gold||0}`;
-  drawAvatar(ctx,400-ctx.measureText(_pf).width/2-48,514,40,(meta&&meta.avatar)||0);   // 🙂 аватар у строки профиля
+  drawAvatar(ctx,12,12,80,(meta&&meta.avatar)||0);   // 🙂 аватар игрока — левый-верхний угол, ×2
   ctx.fillText(_pf,400,536);
   ctx.textAlign='left';ctx.shadowBlur=0;
 }
