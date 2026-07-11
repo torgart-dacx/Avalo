@@ -68,6 +68,14 @@ function uiBegin(){ ctx.save(); ctx.translate(UI_OX,UI_OY); ctx.scale(UI_S,UI_S)
 function uiEnd(){ ctx.restore(); }
 function uiGutters(){ ctx.fillStyle='#050508'; ctx.fillRect(0,0,VW,VH); if(typeof drawPxGutters==='function')drawPxGutters(); }
 const MENU_BG=new Image(); MENU_BG.src='assets/menu_splash.jpg';   // сплэш главного меню (арт из ChatGPT)
+// 🎨 UI-АТЛАС: растровые иконки ТОЛЬКО в статичных меню-экранах (перф: 1 декод, без shadowBlur, фолбэк на процедурный глиф)
+const UIAtlas={ ready:false, img:null, map:null, cell:96,
+  load(){ const im=new Image(); im.onload=()=>{ this.img=im; if(this.map)this.ready=true; }; im.onerror=()=>{}; im.src='assets/ui_atlas.png';
+    fetch('assets/ui_atlas.json').then(r=>r.json()).then(j=>{ this.map=j.icons||j; this.cell=j.cell||96; if(this.img)this.ready=true; }).catch(()=>{}); },
+  has(k){ return !!(this.ready&&this.map&&this.map[k]); },
+  draw(c,k,cx,cy,size){ const r=this.map&&this.map[k]; if(!r||!this.img)return; c.save(); c.shadowBlur=0; c.shadowColor='transparent'; c.imageSmoothingEnabled=true; c.drawImage(this.img,r.x,r.y,r.w,r.h,Math.round(cx-size/2),Math.round(cy-size/2),size,size); c.restore(); }
+};
+UIAtlas.load();
 
 // ── Input ──────────────────────────────────────────────────────────────────
 const keys = {};
@@ -4378,7 +4386,7 @@ function drawAchievements(){
     const ri=rewardInfo(a);
     ctx.fillStyle=lvl>=5?'rgba(44,36,12,0.92)':'rgba(20,18,32,0.85)';ctx.fillRect(24,y,752,rowH-6);
     ctx.strokeStyle=lvl>=5?'#ffcc44':'#33304a';ctx.lineWidth=1;ctx.strokeRect(24,y,752,rowH-6);
-    ctx.font='22px Segoe UI';ctx.textAlign='left';ctx.fillStyle='#fff';ctx.fillText(a.icon,34,y+34);
+    if(UIAtlas.has('ach_'+a.cat))UIAtlas.draw(ctx,'ach_'+a.cat,44,y+26,44); else {ctx.font='22px Segoe UI';ctx.textAlign='left';ctx.fillStyle='#fff';ctx.fillText(a.icon,34,y+34);}   // 🎨 крупный герб категории (фолбэк — эмодзи)
     ctx.font='bold 13px Segoe UI';ctx.fillStyle=lvl>=5?'#ffdd66':'#e2e2ee';ctx.fillText(a.name,66,y+18);
     ctx.font='10px Segoe UI';ctx.fillStyle='#8a93b0';ctx.fillText('Цель: '+(METRIC_DESC[a.metric]||a.metric),66,y+34);
     let st='';for(let s=0;s<5;s++)st+=s<lvl?'★':'☆';ctx.font='12px Segoe UI';ctx.fillStyle='#ffcc44';ctx.fillText(st,66,y+50);
@@ -4621,7 +4629,7 @@ function drawLevelup(){
     if(hov){ctx.save();ctx.shadowColor='#ffcc44';ctx.shadowBlur=16;ctx.strokeStyle='#ffcc44';ctx.lineWidth=2;ctx.strokeRect(cx+3,cy+3,cw-6,ch-6);ctx.restore();ctx.shadowBlur=0;}
     const _gg=upgGlyph(u);   // пиксель-глиф дизайн-системы + мелкий эмодзи-бейдж
     pxPanel(cx+cw/2-33,cy+18,66,66,'rgba(8,7,15,0.9)',_gg[1]); pxRivets(cx+cw/2-33,cy+18,66,66,_gg[1]);
-    drawPx(cx+cw/2-24,cy+27,7,_gg[0],_gg[1]);
+    if(UIAtlas.has(_gg[0]))UIAtlas.draw(ctx,_gg[0],cx+cw/2,cy+51,58); else drawPx(cx+cw/2-24,cy+27,7,_gg[0],_gg[1]);   // 🎨 атлас (фолбэк — пиксель-глиф)
     ctx.font='15px Segoe UI';ctx.textAlign='center';ctx.fillStyle='#ffcc44';ctx.fillText(u.icon,cx+cw/2+46,cy+34);
     ctx.fillStyle='#ffffff';ctx.font='bold 14px Segoe UI';ctx.fillText(u.name,cx+cw/2,cy+98);
     const tc=u.tier===1?'#888888':u.tier===2?'#ffaa44':'#ff44aa';ctx.fillStyle=tc;ctx.font='bold 9px Segoe UI';ctx.textAlign='right';ctx.fillText(`T${u.tier}`,cx+cw-8,cy+14);ctx.textAlign='center';
@@ -4645,6 +4653,7 @@ function drawArchSel(){
     pxPanel(cx,cy,cw,ch,hov?'rgba(30,22,50,0.97)':'rgba(16,12,28,0.95)',hov?arch.color:'#3a3560'); pxRivets(cx,cy,cw,ch,hov?arch.color:'#3a3560');
     if(hov){ctx.save();ctx.shadowColor=arch.color;ctx.shadowBlur=18;ctx.strokeStyle=arch.color;ctx.lineWidth=2;ctx.strokeRect(cx+3,cy+3,cw-6,ch-6);ctx.restore();ctx.shadowBlur=0;}
     if(archIconOwned(k)){ ctx.save();ctx.shadowColor=arch.color;ctx.shadowBlur=18; drawArchEmblem(ctx,cx+92-33,cy+46-33,66,k); ctx.restore(); }   // ⭐ купленная эмблема вместо эмодзи-кружка
+    else if(UIAtlas.has(k)){ ctx.save();ctx.shadowBlur=0; UIAtlas.draw(ctx,k,cx+92,cy+46,66); ctx.restore(); }   // 🎨 растровая эмблема архетипа (атлас)
     else { ctx.shadowColor=arch.color;ctx.shadowBlur=20;ctx.fillStyle=arch.color;ctx.beginPath();ctx.arc(cx+92,cy+46,32,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
       ctx.fillStyle='rgba(0,0,0,0.5)';ctx.beginPath();ctx.arc(cx+92,cy+46,32,0,Math.PI*2);ctx.fill();
       ctx.font='28px Segoe UI';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(arch.icon||'✦',cx+92,cy+57); }
@@ -4892,7 +4901,7 @@ function drawTestPanels(){
     ctx.fillStyle=on?'#1f3d1f':'#141020'; ctx.fillRect(L.x+8,ry+8,13,13);   // чекбокс
     ctx.strokeStyle=on?'#7dff9d':'#4a4570'; ctx.lineWidth=1; ctx.strokeRect(L.x+8,ry+8,13,13);
     if(on){ ctx.fillStyle='#7dff9d'; ctx.font='bold 11px Segoe UI'; ctx.fillText('✓',L.x+10,ry+19); }
-    const g=upgGlyph(u); drawPx(L.x+26,ry+8,2,g[0],g[1]);   // пиксель-глиф дизайн-системы (id-префикс → глиф+цвет)
+    const g=upgGlyph(u); if(UIAtlas.has(g[0]))UIAtlas.draw(ctx,g[0],L.x+34,ry+16,28); else drawPx(L.x+26,ry+8,2,g[0],g[1]);   // 🎨 атлас (фолбэк — пиксель-глиф)
     ctx.fillStyle=on?'#eaf5ea':(lock?'#6a6486':'#c6c1de'); ctx.font=(on?'bold ':'')+'10px Segoe UI';
     ctx.fillText((lock?'🔒':'')+(u.name||'').slice(0,26),L.x+44,ry+14);
     ctx.fillStyle='#7a7496'; ctx.font='8px Segoe UI'; ctx.fillText('T'+(u.tier||1)+(u.req?' · нужен: '+u.req:''),L.x+44,ry+25);
