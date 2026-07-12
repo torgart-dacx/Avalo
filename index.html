@@ -612,15 +612,15 @@ function trialWeekDaysLeft(){ return 7-((new Date().getDay()+6)%7); }
 function drawTrialCard(rec,x,y,w,h,weekly){
   const t=TRIAL_BY_ID[rec.id]||{icon:'❔',name:rec.id,desc:'',rew:0};
   const done=rec.progress>=rec.goal;
-  pxPanel(x,y,w,h, rec.claimed?'rgba(16,20,14,0.9)':(done?'rgba(34,28,10,0.94)':'rgba(14,12,24,0.92)'), weekly?'#bb9944':(done?'#ffcc44':'#3a3454'));
-  pxRivets(x,y,w,h, weekly?'#bb9944':'#565078');
-  ctx.font='26px Segoe UI'; ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.fillText(t.icon,x+38,y+h/2+9); ctx.textAlign='left';
-  ctx.font='bold 14px Segoe UI'; ctx.fillStyle=rec.claimed?'#7a8570':(done?'#ffdd66':'#e2e2ee'); ctx.fillText(t.name,x+72,y+24);
-  ctx.font='11px Segoe UI'; ctx.fillStyle='#8a93b0'; ctx.fillText(t.desc,x+72,y+42);
-  ctx.fillStyle='#ffd24a'; ctx.fillText('Награда: '+t.rew+' 🪙  +  🍀×'+(weekly?2:1),x+72,y+h-14);
-  const bx=x+390,bw=210,by=y+18, frac=Math.min(1,rec.progress/rec.goal);
+  // 📜 Пиксель+ (вариант B): титул-бар с наградой, акцент по состоянию; клик-ректы кнопки НЕ двигаются
+  const accent=rec.claimed?'#5a6455':(done?'#ffcc44':(weekly?'#c8a24a':'#5577cc'));
+  pxTitlePanel(x,y,w,h,accent,(weekly?'⭐ ':'')+t.name,'НАГРАДА: '+t.rew+' 🪙 + 🍀×'+(weekly?2:1), rec.claimed?'rgba(16,20,14,0.9)':(done?'rgba(30,25,10,0.95)':'rgba(13,10,24,0.96)'));
+  ctx.font='24px Segoe UI'; ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.fillText(t.icon,x+36,y+30+Math.round((h-30)/2)+8); ctx.textAlign='left';
+  ctx.fillStyle=accent; ctx.fillRect(x+66,y+45,3,3);   // акцент-тик описания
+  ctx.font='11px Segoe UI'; ctx.fillStyle=rec.claimed?'#7a8570':'#b9b2cf'; ctx.fillText(t.desc,x+76,y+52);
+  const bx=x+390,bw=210,by=y+48, frac=Math.min(1,rec.progress/rec.goal);
   ctx.fillStyle='#15131f'; ctx.fillRect(bx,by,bw,12); ctx.fillStyle=done?'#ffcc44':'#5577cc'; ctx.fillRect(bx,by,Math.round(bw*frac),12);
-  ctx.strokeStyle='#3a3454'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,12);
+  ctx.strokeStyle=shade(accent,-0.45); ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,12);
   ctx.font='10px Segoe UI'; ctx.fillStyle='#cfd3e0'; ctx.textAlign='right'; ctx.fillText(Math.floor(rec.progress)+' / '+rec.goal,bx+bw,by+24); ctx.textAlign='left';
   const cbx=x+616, cby=y+Math.round(h/2)-18;   // кнопка 92×36 — те же ректы в clickTrials!
   if(rec.claimed){ ctx.fillStyle='#66aa66'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center'; ctx.fillText('✓ Забрано',cbx+46,cby+22); ctx.textAlign='left'; }
@@ -3657,6 +3657,18 @@ function pxPanel(x,y,w,h,base,edge){
   ctx.fillRect(x+2,y+h-4,4,2); ctx.fillRect(x+2,y+h-6,2,4); ctx.fillRect(x+w-6,y+h-4,4,2); ctx.fillRect(x+w-4,y+h-6,2,4);
 }
 function pxRivets(x,y,w,h,col){ ctx.fillStyle=col||'#565078'; [[x+6,y+6],[x+w-8,y+6],[x+6,y+h-8],[x+w-8,y+h-8]].forEach(([rx,ry])=>ctx.fillRect(Math.round(rx),Math.round(ry),2,2)); }
+// 📜 Пиксель+ панель (дизайн-пакет, вариант B): pxPanel + титул-бар в цвет акцента + мета справа. Возвращает Y низа титул-бара.
+function pxTitlePanel(x,y,w,h,accent,title,meta,base){
+  x=Math.round(x);y=Math.round(y);w=Math.round(w);h=Math.round(h);
+  pxPanel(x,y,w,h, base||'rgba(13,10,24,0.96)', shade(accent,-0.45));
+  ctx.fillStyle=shade(accent,-0.62); ctx.fillRect(x+4,y+4,w-8,26);          // титул-бар
+  ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(x+4,y+4,w-8,1);      // верхний блик
+  ctx.fillStyle=accent; ctx.fillRect(x+4,y+29,w-8,1);                       // акцент-линия
+  ctx.textAlign='left'; ctx.font='bold 14px Segoe UI'; ctx.fillStyle='#fff'; ctx.fillText(title,x+14,y+22);
+  if(meta){ ctx.textAlign='right'; ctx.font='10px Segoe UI'; ctx.fillStyle=shade(accent,0.35); ctx.fillText(meta,x+w-14,y+21); ctx.textAlign='left'; }
+  pxRivets(x,y,w,h,accent);
+  return y+30;
+}
 // 7×7 пиксель-глифы (X = пиксель) — иконки умений и апгрейдов
 const PXG={
   sword:['...X...','...X...','...X...','...X...','.XXXXX.','...X...','..XXX..'],
@@ -4411,21 +4423,19 @@ function drawInventory(){
   ctx.fillStyle='#8899bb';ctx.font='11px Segoe UI';ctx.fillText('I — закрыть (пауза) · лучший предмет надевается автоматически · выше редкость = больше аффиксов и сильнее значения',400,44);
   ctx.textAlign='left'; let lx=70; ctx.font='10px Segoe UI';
   RARITY.forEach(r=>{ctx.fillStyle=r.col;ctx.fillText('■',lx,62);ctx.fillStyle='#b6b6c8';const t=' '+r.n+' ('+r.affixes+')';ctx.fillText(t,lx+8,62);lx+=18+t.length*5.7;});
-  const ks=slotKeys(), rows=Math.ceil(ks.length/2), gY=10, top=74, ph=Math.floor((524-(rows-1)*gY)/rows), maxAff=Math.max(2,Math.floor((ph-92)/15));
+  const ks=slotKeys(), rows=Math.ceil(ks.length/2), gY=10, top=74, ph=Math.floor((524-(rows-1)*gY)/rows), maxAff=Math.max(2,Math.floor((ph-106)/15));
   ks.forEach((sk,i)=>{
     const x=70+(i%2)*350, y=top+Math.floor(i/2)*(ph+gY), it=player.equipped[sk], slot=SLOTS[sk];
-    ctx.fillStyle='rgba(20,18,32,0.92)';ctx.fillRect(x,y,320,ph);
-    ctx.strokeStyle=it?itemCol(it):'#3a3a52';ctx.lineWidth=(it&&(it.rarity>=4||it.unique))?2.5:1.4;ctx.strokeRect(x,y,320,ph);
-    if(!it)ctx.globalAlpha=0.35; drawItemIcon(ctx,x+26,y+20,26,it||{slot:sk,rarity:0},_iT); ctx.globalAlpha=1;
-    ctx.textAlign='left';ctx.fillStyle='#dde';ctx.font='bold 14px Segoe UI';ctx.fillText(SLOT_DESC[sk]||slot.name,x+44,y+21);
-    ctx.fillStyle='#7788aa';ctx.font='10px Segoe UI';ctx.fillText('Возможные бонусы:',x+12,y+38);
-    ctx.fillStyle='#9aa6c4';wrapText(slot.affixes.map(a=>a.label).join(', '),x+12,y+51,296,12);
-    const dy=y+72; ctx.strokeStyle='#2a2840';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+10,dy);ctx.lineTo(x+310,dy);ctx.stroke();
+    // 📜 Пиксель+ (вариант B): титул-бар слота, акцент = цвет редкости надетого
+    pxTitlePanel(x,y,320,ph, it?itemCol(it):'#565078', SLOT_DESC[sk]||slot.name, it?('УР.'+it.ilvl):'ПУСТО');
+    if(!it)ctx.globalAlpha=0.35; drawItemIcon(ctx,x+26,y+50,26,it||{slot:sk,rarity:0},_iT); ctx.globalAlpha=1;
+    ctx.textAlign='left';ctx.fillStyle='#7788aa';ctx.font='10px Segoe UI';ctx.fillText('Возможные бонусы:',x+46,y+46);
+    ctx.fillStyle='#9aa6c4';wrapText(slot.affixes.map(a=>a.label).join(', '),x+46,y+59,262,12);
+    const dy=y+86; ctx.strokeStyle='#2a2840';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+10,dy);ctx.lineTo(x+310,dy);ctx.stroke();
     if(it){
       ctx.fillStyle=itemCol(it);ctx.font='bold 12px Segoe UI';ctx.fillText('Надето: '+(it.unique?('⭐ '+it.name):RARITY[it.rarity].n)+(it.sharpen?(' +'+it.sharpen):''),x+12,dy+16);
-      ctx.fillStyle='#888';ctx.font='10px Segoe UI';ctx.textAlign='right';ctx.fillText('ур.'+it.ilvl,x+308,dy+16);ctx.textAlign='left';
-      it.affixes.slice(0,maxAff).forEach((a,j)=>{ctx.fillStyle=a.uniq?UNIQUE_COL:'#9fe6a0';ctx.font='11px Segoe UI';const v=a.uniq?'':(a.pct?((a.neg?'−':'+')+(Math.round(a.val*1000)/10)+'%'):('+'+Math.round(a.val)));ctx.fillText((a.uniq?'★ ':'• ')+a.label+(v?'  '+v:''),x+14,dy+33+j*14);});
-      if(it.affixes.length>maxAff){ctx.fillStyle='#667';ctx.font='9px Segoe UI';ctx.fillText('… ещё +'+(it.affixes.length-maxAff),x+14,dy+33+maxAff*14);}
+      it.affixes.slice(0,maxAff).forEach((a,j)=>{ctx.fillStyle=a.uniq?UNIQUE_COL:'#9fe6a0';ctx.font='11px Segoe UI';const v=a.uniq?'':(a.pct?((a.neg?'−':'+')+(Math.round(a.val*1000)/10)+'%'):('+'+Math.round(a.val)));ctx.fillText((a.uniq?'★ ':'• ')+a.label+(v?'  '+v:''),x+14,dy+31+j*14);});
+      if(it.affixes.length>maxAff){ctx.fillStyle='#667';ctx.font='9px Segoe UI';ctx.fillText('… ещё +'+(it.affixes.length-maxAff),x+14,dy+31+maxAff*14);}
       if(it.unique){ctx.fillStyle='#c8934a';ctx.font='italic 9px Segoe UI';ctx.fillText('«'+it.lore+'»',x+12,y+ph-8);}
     } else { ctx.fillStyle='#666';ctx.font='11px Segoe UI';ctx.fillText('Надето: пусто — выбивается из врагов',x+12,dy+16); }
   });
@@ -4571,8 +4581,10 @@ function drawBestiary(){
     const y=72+i*rowH-bestScroll; if(y<20||y>560)return;
     const t=ET[id], g=MONSTER_GUIDE[id]||{role:'',desc:''};
     const role=E_ROLE[id]||'melee', tier=role==='boss'?'БОСС':role==='elite'?'ЭЛИТА':'ОБЫЧНЫЙ', tcol=role==='boss'?'#ff5544':role==='elite'?'#cc66ff':'#5ba8e0', boss=(role==='boss');
-    ctx.fillStyle=boss?'rgba(46,20,20,0.9)':role==='elite'?'rgba(34,20,46,0.9)':'rgba(20,18,32,0.85)';ctx.fillRect(24,y,752,rowH-6);
-    ctx.strokeStyle=boss?'#cc5544':role==='elite'?'#aa55cc':'#33304a';ctx.lineWidth=1;ctx.strokeRect(24,y,752,rowH-6);
+    // 📜 Пиксель+ (вариант B): строка на pxPanel, кант и заклёпки в цвет роли
+    pxPanel(24,y,752,rowH-6, boss?'rgba(46,20,20,0.9)':role==='elite'?'rgba(34,20,46,0.9)':'rgba(20,18,32,0.85)', boss?'#cc5544':role==='elite'?'#aa55cc':'#33304a');
+    pxRivets(24,y,752,rowH-6, boss?'#cc5544':role==='elite'?'#aa55cc':'#3f3b5c');
+    ctx.fillStyle=tcol; ctx.fillRect(92,y+9,3,3);   // акцент-тик у имени
     const e=new Enemy(id,62,y+25,1,1); e.r=Math.min(t.r,20); e.flash=0; e.slow=0; e.dead=false; e.spawnT=9; e._ambT=999; try{e.draw();}catch(_){}
     ctx.textAlign='left';ctx.fillStyle=boss?'#ff9988':'#e2e2ee';ctx.font='bold 13px Segoe UI';ctx.fillText(t.name,100,y+16);
     ctx.font='bold 9px Segoe UI';const tw=ctx.measureText(tier).width+12;ctx.fillStyle=tcol;ctx.globalAlpha=0.2;ctx.fillRect(100,y+25,tw,15);ctx.globalAlpha=1;ctx.strokeStyle=tcol;ctx.lineWidth=1;ctx.strokeRect(100,y+25,tw,15);ctx.fillStyle=tcol;ctx.textAlign='center';ctx.fillText(tier,100+tw/2,y+35);ctx.textAlign='left';   // #4: класс-тег монстра
