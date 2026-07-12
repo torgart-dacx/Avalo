@@ -690,6 +690,7 @@ const PROD_RWEIGHT=[620,280,80,18,1.97,0.03];   // прод-редкости: Б
 const BOSS_RWEIGHT=[0,0,56,30,12,1.5];           // боссы: ≥Уникальный, Божественный ~1.5%
 let drops=[], showInv=false, forgeTab='craft', forgeSel=null, frostZones=[], groundFX=[];
 let runBag=[], _bagFullT=0, forgeStashScroll=0;   // 🎒 рюкзак забега (лимит BAG_CAP) + скролл стэша кузницы
+let zFlashT=0, zFlashCol='#ffffff';   // ⚡ полноэкранная вспышка финала Z-ульты
 const BAG_CAP=8;
 function stashCap(){ return (meta&&meta.stashCap)||40; }   // ёмкость сундука (докупается до 100 в кузнице)
 // Задача 2: зрелищность — экранная тряска и hit-stop
@@ -1895,7 +1896,11 @@ function zResolve(p){ const Z=zSpec(p), R=Z.r*(p.archAoeM||1), dmg=p._dmg(p.c.dm
   rings.push(new Ring(p.x,p.y,Z.col,R)); rings.push(new Ring(p.x,p.y,'#ffffff',R*0.6)); rings.push(new Ring(p.x,p.y,Z.col,R*0.3));
   for(let i=0;i<46;i++){ const a=Math.random()*Math.PI*2, sp=200+Math.random()*380; parts.push(new Particle(p.x,p.y,Math.cos(a)*sp,Math.sin(a)*sp,i%3?Z.col:'#ffffff',0.7,3+Math.random()*4)); }
   parts.push(new Particle(p.x,p.y,0,0,Z.col,0.5,90,{kind:'pillar'}));
-  skyFlashT=Math.max(skyFlashT,0.5); addShake(13); hitStopFor(0.12);
+  zFlashT=0.32; zFlashCol=Z.col;   // ⚡ полноэкранная вспышка
+  [0.07,0.15,0.24].forEach((d,i)=>after(d,()=>{ rings.push(new Ring(p.x,p.y,i%2?'#ffffff':Z.col,R*(0.5+i*0.35))); if(i===1)addShake(6); }));   // каскад ударных волн
+  for(let k=0;k<12;k++){ const a=k/12*Math.PI*2; parts.push(new Particle(p.x+Math.cos(a)*30,p.y+Math.sin(a)*30,Math.cos(a)*620,Math.sin(a)*620,k%2?Z.col:'#ffffff',0.45,4,{glow:true})); }   // радиальные лучи-курьеры
+  after(0.3,()=>{ parts.push(new Particle(p.x,p.y,0,0,Z.col,0.4,70,{kind:'pillar'})); rings.push(new Ring(p.x,p.y,Z.col,R*1.15)); });
+  skyFlashT=Math.max(skyFlashT,0.5); addShake(13); hitStopFor(0.14);
   if(typeof SFX!=='undefined'){ SFX.play('explosion'); SFX.play('levelup'); }
   try{ if(Z.fx)Z.fx(p,parts); }catch(_e){}
   track('z_casts');
@@ -2734,6 +2739,16 @@ class Player {
     if(this.shieldHp>0){const sf=this.shieldHp/this.shieldMax,sa=Date.now()/400;ctx.globalAlpha=0.5+Math.sin(sa)*0.18;ctx.strokeStyle='#6699ff';ctx.lineWidth=4;ctx.shadowColor='#88aaff';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(this.x,this.y,this.r+11,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1;const bw2=44,bx2=this.x-bw2/2,by2=this.y-this.r-23;ctx.fillStyle='#001133';ctx.fillRect(bx2,by2,bw2,3);ctx.fillStyle='#4488ff';ctx.fillRect(bx2,by2,bw2*sf,3);}
     if(this.eagleCharges>0){ctx.shadowColor='#ffee44';ctx.shadowBlur=28;ctx.strokeStyle='rgba(255,238,68,0.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(this.x,this.y,this.r+8,0,Math.PI*2);ctx.stroke();}
     // Гуманоидный облик героя (редизайн 2026-06-19) — фигура+оружие+анимация; фолбэк = круг
+    if(this.zCastT>0){ const zpr=1-Math.max(0,this.zCastT)/this.zCastMax, _Z=zSpec(this), _t=Date.now()/1000;   // ⚡ рунный круг каста (под героем)
+      ctx.save(); const RR=56+zpr*66, al=0.35+zpr*0.5;
+      for(let ring=0;ring<2;ring++){ const dir=ring?-1:1, rr2=RR-ring*18; ctx.globalAlpha=al*(ring?0.7:1); ctx.strokeStyle=ring?'#ffffff':_Z.col; ctx.lineWidth=ring?1.2:2.2;
+        ctx.beginPath(); ctx.arc(this.x,this.y,rr2,_t*dir*1.6,_t*dir*1.6+4.6); ctx.stroke();
+        for(let k=0;k<8;k++){ const a=_t*dir*1.6+k/8*Math.PI*2; ctx.beginPath(); ctx.moveTo(this.x+Math.cos(a)*(rr2-4),this.y+Math.sin(a)*(rr2-4)); ctx.lineTo(this.x+Math.cos(a)*(rr2+4),this.y+Math.sin(a)*(rr2+4)); ctx.stroke(); } }
+      for(let k=0;k<4;k++){ const a=_t*0.9+k/4*Math.PI*2+zpr*3, d0=RR+40+((_t*2+k)%1)*90*(1-zpr*0.6);   // энерго-линии, стекающиеся к герою
+        const x1=this.x+Math.cos(a)*d0, y1=this.y+Math.sin(a)*d0, x2=this.x+Math.cos(a)*(d0-34-zpr*22), y2=this.y+Math.sin(a)*(d0-34-zpr*22);
+        const lg=ctx.createLinearGradient(x1,y1,x2,y2); lg.addColorStop(0,'rgba(255,255,255,0)'); lg.addColorStop(1,_Z.col);
+        ctx.globalAlpha=0.5+zpr*0.4; ctx.strokeStyle=lg; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+      ctx.restore(); ctx.globalAlpha=1; }
     try{ drawHeroBody(ctx, this, col, Date.now()/1000); }
     catch(_e){ ctx.shadowColor=col; ctx.shadowBlur=14; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); }
     ctx.shadowBlur=0;
@@ -3378,7 +3393,7 @@ function updateCam(){
 }
 function initGame(classId){
   worldW=800;worldH=600;camX=0;camY=0;          // F5: по умолчанию арена = экран
-  player=new Player(classId); enemies=[];projs=[];parts=[];orbs=[];rings=[];bladeWaves=[];drops=[];floats=[];frostZones=[];groundFX=[];showInv=false; runBag=[]; _bagFullT=0;   // 🎒 рюкзак на забег
+  player=new Player(classId); enemies=[];projs=[];parts=[];orbs=[];rings=[];bladeWaves=[];drops=[];floats=[];frostZones=[];groundFX=[];showInv=false; runBag=[]; _bagFullT=0; zFlashT=0;   // 🎒 рюкзак на забег + ⚡ вспышка Z
   dashGhosts=[];dmgFlash=0;onboardT=7;arcTrans={t:0,max:2.8,lvl:1,name:'',sub:''};castFX=[];skyFlashT=0;delayedFX=[];   // сброс афтеримеджа/флэша/перехода/рун/отложенных + 7с подсказок
   hazards=[];minions=[];   // архетипы: сброс зон/призывов между забегами
   evPortal=null;evActive=null;evChoice=[];evAltarPair=null;   // фича 5: сброс арен-событий
@@ -5197,6 +5212,18 @@ function gameDraw(){
   player.draw();floats.forEach(f=>f.draw());
   ctx.restore();
   { const vg=ctx.createRadialGradient(VW/2,VH/2,270,VW/2,VH/2,780); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,gameMode==='openworld'?'rgba(0,0,0,0.30)':'rgba(0,0,0,0.40)'); ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH); }   // виньетка (глубина/фокус)
+  if(player&&player.zCastT>0){ const zpr=1-Math.max(0,player.zCastT)/player.zCastMax, _Z=zSpec(player);   // ⚡ кинематографический каст: фокус-затемнение + letterbox
+    const hx=player.x-camX, hy=player.y-camY;
+    const cg=ctx.createRadialGradient(hx,hy,120,hx,hy,620); cg.addColorStop(0,'rgba(0,0,0,0)'); cg.addColorStop(1,'rgba(0,0,0,'+(0.35+zpr*0.25)+')');
+    ctx.fillStyle=cg; ctx.fillRect(0,0,VW,VH);
+    const lb=Math.round(46*Math.min(1,zpr*2.2)); ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,VW,lb); ctx.fillRect(0,VH-lb,VW,lb);
+    ctx.save(); ctx.globalAlpha=0.55+0.35*Math.sin(Date.now()/90); ctx.fillStyle=_Z.col; ctx.font='bold 15px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('⚡ '+_Z.name.toUpperCase(),VW/2,lb+24); ctx.restore(); ctx.textAlign='left';
+    const org=ctx.createRadialGradient(hx,hy-64,2,hx,hy-64,10+zpr*30);   // сфера-заряд над героем
+    org.addColorStop(0,'#ffffff'); org.addColorStop(0.45,_Z.col); org.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=org; ctx.beginPath(); ctx.arc(hx,hy-64,10+zpr*30,0,Math.PI*2); ctx.fill(); }
+  if(zFlashT>0){ const f=clamp(zFlashT/0.32,0,1);   // ⚡ финал: белая→цветная полноэкранная вспышка
+    ctx.save(); ctx.globalAlpha=f*0.7; ctx.fillStyle=f>0.6?'#ffffff':zFlashCol; ctx.fillRect(0,0,VW,VH); ctx.restore(); }
   if(player&&!player.dead&&player.hp<player.maxHp*0.25){ const p=0.5+0.5*Math.sin(Date.now()/170); const vg=ctx.createRadialGradient(VW/2,VH/2,240,VW/2,VH/2,760); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(150,0,0,'+(0.22+0.2*p)+')'); ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH); }   // пульс «мало ОЗ»
   if(dmgFlash>0){ ctx.fillStyle='rgba(180,0,0,'+(dmgFlash*0.5)+')'; ctx.fillRect(0,0,VW,VH); }   // флэш урона
   if(skyFlashT>0){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(255,240,200,'+(skyFlashT*0.45)+')'; ctx.fillRect(0,0,VW,VH); ctx.restore(); }   // скайлайт тяжёлого взрыва
@@ -5295,6 +5322,7 @@ function gameUpdate(dt){
   if(player&&player.au&&player.au._riseT>0)player.au._riseT-=dt;   // au_su7: таймер окна вознесения
   if(player)player._snCasc=0;   // au_sn20: сброс счётчика каскада крит-стрел каждый кадр
   if(_bagFullT>0)_bagFullT-=dt;   // 🎒 гейт тоста «рюкзак полон»
+  if(zFlashT>0)zFlashT-=dt;   // ⚡ вспышка финала Z
   if(player&&player.au&&player.au._huPackT>0)player.au._huPackT-=dt;   // au_hu18: таймер окна вечной стаи
   minions.forEach(m=>m.update(dt));   // архетипы: призывы (Волшебник-Призыватель, Лучник-Ловчий)
   if(hazards.length){ hazards.forEach(hz=>{ hz.life-=dt; if(hz.arm>0)hz.arm-=dt;
