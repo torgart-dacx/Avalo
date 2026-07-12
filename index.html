@@ -4464,19 +4464,19 @@ function drawForge(){
       if(it)drawItemIcon(ctx,ex+28,ey+26,38,it,_fT);
       else{ctx.globalAlpha=0.28;drawItemIcon(ctx,ex+28,ey+26,34,{slot:sk,rarity:0},0);ctx.globalAlpha=1;}});   // призрак типа слота
     const it=forgeSelItem();
-    ctx.fillStyle='rgba(20,18,32,0.9)';ctx.fillRect(478,90,308,300);ctx.strokeStyle='#33304a';ctx.lineWidth=1;ctx.strokeRect(478,90,308,300);
+    // 📜 Пиксель+ (вариант B): панель детали с титул-баром, акцент = цвет редкости выбранного
+    pxTitlePanel(478,90,308,300, it?itemCol(it):'#565078', it?((it.unique?'⭐ ':'')+itemName(it)+(it.sharpen?(' +'+it.sharpen):'')):'Деталь предмета', it?('УР.'+it.ilvl):'');
     if(it){
-      ctx.fillStyle=itemCol(it);ctx.font='bold 14px Segoe UI';ctx.fillText((it.unique?'⭐ ':'')+itemName(it)+(it.sharpen?(' +'+it.sharpen):''),490,112);
-      drawItemIcon(ctx,756,122,46,it,_fT);   // крупная иконка в правом верхнем углу панели детали
+      drawItemIcon(ctx,752,146,46,it,_fT);   // крупная иконка справа (под титул-баром)
       // предпросмотр заточки: фактические значения (с учётом заточки) → значения после следующей заточки
       const _shm=1+0.1*(it.sharpen||0), _shm2=1+0.1*((it.sharpen||0)+1);
       const _fmtA=(a,m)=>a.pct?((a.neg?'−':'+')+(Math.round(a.val*m*1000)/10)+'%'):((a.int?'+'+Math.round(a.val*m):'+'+Math.round(a.val*m)));
       it.affixes.forEach((a,j)=>{ ctx.font='12px Segoe UI';
         const base=(a.uniq?'★ ':'• ')+a.label+(a.uniq?'':'  '+_fmtA(a,_shm));
-        ctx.fillStyle=a.uniq?UNIQUE_COL:'#9fe6a0'; ctx.fillText(base,494,134+j*18);
-        if(!a.uniq){ const w=ctx.measureText(base).width; ctx.fillStyle='#ffd24a'; ctx.font='11px Segoe UI'; ctx.fillText(' → '+_fmtA(a,_shm2),494+w+4,134+j*18); }
+        ctx.fillStyle=a.uniq?UNIQUE_COL:'#9fe6a0'; ctx.fillText(base,494,140+j*18);
+        if(!a.uniq){ const w=ctx.measureText(base).width; ctx.fillStyle='#ffd24a'; ctx.font='11px Segoe UI'; ctx.fillText(' → '+_fmtA(a,_shm2),494+w+4,140+j*18); }
       });
-      if(it.unique){ ctx.fillStyle='#ffd24a'; ctx.font='10px Segoe UI'; ctx.fillText('★ спец-эффект: сила ×'+_shm.toFixed(1)+' → ×'+_shm2.toFixed(1)+' при заточке',494,134+it.affixes.length*18); }
+      if(it.unique){ ctx.fillStyle='#ffd24a'; ctx.font='10px Segoe UI'; ctx.fillText('★ спец-эффект: сила ×'+_shm.toFixed(1)+' → ×'+_shm2.toFixed(1)+' при заточке',494,140+it.affixes.length*18); }
       ctx.fillStyle='#8a93b0'; ctx.font='10px Segoe UI'; ctx.fillText('⚒ Заточка +'+(((it.sharpen||0))+1)+': все значения ×'+_shm2.toFixed(1)+' (жёлтым — после заточки)',490,290);
       if(it.unique){ ctx.fillStyle=UNIQUE_COL;ctx.font='bold 11px Segoe UI';ctx.fillText('⭐ УНИКАЛЬНЫЙ · реролл и смена редкости недоступны',490,242);
         ctx.fillStyle='#c8934a';ctx.font='italic 10px Segoe UI';wrapText('«'+it.lore+'»',490,258,288,13); }
@@ -4488,6 +4488,9 @@ function drawForge(){
     } else { ctx.fillStyle='#667';ctx.font='12px Segoe UI';ctx.fillText('Выбери предмет в сундуке или экипировке →',490,210); }
     ctx.fillStyle='#667';ctx.font='10px Segoe UI';ctx.fillText('Золото — только за волны/боссов. Лут копится в сундуке после забега.',28,402);
   } else {
+    // 📜 Пиксель+ (вариант B): секции в панелях; координаты контента/кликов не тронуты
+    pxPanel(44,92,712,80,'rgba(16,14,26,0.9)','#4a3f66'); pxRivets(44,92,712,80,'#9977dd');
+    pxPanel(44,186,712,112,'rgba(16,14,26,0.9)','#4a3f66'); pxRivets(44,186,712,112,'#9977dd');
     ctx.fillStyle='#cfd3e0';ctx.font='14px Segoe UI';ctx.fillText('💍 Слот «Кольцо/Амулет» — 5-й слот со своими аффиксами (Крит, Урон, ОЗ, Вампиризм, Удача)',60,116);
     fbtn(60,128,200,30, meta.unlocks.accessory?'✓ Куплено':'Купить — 500🪙', !meta.unlocks.accessory&&(meta.gold||0)>=500);
     ctx.fillStyle='#cfd3e0';ctx.font='14px Segoe UI';ctx.fillText('🎨 Скины (цвет героя) — 200🪙. Текущий выделен жёлтым.',60,210);
@@ -4505,8 +4508,13 @@ function drawSkillTree(){   // 🌳 экран мета-древа (800×600, UI
   let hov=null;
   TREE_BRANCHES.forEach((b,bi)=>{
     const x=TREE_UI.colX[bi];
-    pxPanel(x,72,TREE_UI.colW,36,'rgba(16,14,26,0.95)',b.edge); drawPx(x+10,79,3,b.icon,b.col);   // шапка ветви
-    ctx.fillStyle=b.col;ctx.font='bold 15px Segoe UI';ctx.textAlign='center';ctx.fillText(b.name,x+TREE_UI.colW/2+10,96);ctx.textAlign='left';
+    // 📜 Пиксель+ (вариант B): шапка ветви — титул-бар в цвет ветви
+    pxPanel(x,72,TREE_UI.colW,36, shade(b.col,-0.72), b.edge);
+    ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fillRect(x+4,74,TREE_UI.colW-8,1);   // верхний блик
+    ctx.fillStyle=b.col;ctx.fillRect(x+4,104,TREE_UI.colW-8,1);                     // акцент-линия
+    if(UIAtlas.has(b.icon))UIAtlas.draw(ctx,b.icon,x+21,90,24); else drawPx(x+10,79,3,b.icon,b.col);
+    ctx.fillStyle='#fff';ctx.font='bold 15px Segoe UI';ctx.textAlign='center';ctx.fillText(b.name,x+TREE_UI.colW/2+10,96);ctx.textAlign='left';
+    pxRivets(x,72,TREE_UI.colW,36,b.col);
     TREE_NODES.forEach(n=>{ if(n.br!==b.key)return;
       const r=treeCardRect(n), lvl=treeLvl(n.id), open=treeNodeOpen(n), maxed=lvl>=n.max;
       const cost=maxed?0:treeNodeCost(n,lvl), can=open&&!maxed&&(meta.gold||0)>=cost;
@@ -4514,7 +4522,8 @@ function drawSkillTree(){   // 🌳 экран мета-древа (800×600, UI
       if(n._ri>0){ ctx.fillStyle=open?b.edge:'#242236'; ctx.fillRect(r.x+r.w/2-1,r.y-TREE_UI.gap,2,TREE_UI.gap); }   // связка с пред. узлом
       pxPanel(r.x,r.y,r.w,r.h, open?'rgba(16,14,26,0.94)':'rgba(10,9,16,0.94)', maxed?'#ffcc44':(open?(hovered?b.col:b.edge):'#2a2838'));
       if(can&&hovered)pxRivets(r.x,r.y,r.w,r.h,b.col);
-      drawPx(r.x+10,r.y+10,3,n.glyph,open?b.col:'#3c3a4c');
+      if(UIAtlas.has(n.glyph)){ if(!open)ctx.globalAlpha=0.35; UIAtlas.draw(ctx,n.glyph,r.x+21,r.y+21,26); ctx.globalAlpha=1; }
+      else drawPx(r.x+10,r.y+10,3,n.glyph,open?b.col:'#3c3a4c');   // 🎨 атлас-иконка узла (закрытый — приглушена), фолбэк — пиксель-глиф
       ctx.fillStyle=open?'#e2e2ee':'#666677';ctx.font='bold 13px Segoe UI';ctx.fillText(n.name,r.x+40,r.y+21);
       ctx.fillStyle=open?'#9aa6c4':'#555566';ctx.font='10px Segoe UI';ctx.fillText(n.per+' за уровень',r.x+40,r.y+36);
       for(let i=0;i<n.max;i++){ ctx.fillStyle=i<lvl?b.col:'#26243a'; ctx.fillRect(r.x+40+i*14,r.y+46,10,8); }   // пипсы уровней
