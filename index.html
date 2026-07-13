@@ -359,7 +359,7 @@ const REW={
   rARMOR:[.01,.01,.02,.03,.03], rPICK:[5,8,12,18,27]
 };
 const PERK_OF={rDMG:'DMG',rHP:'HP',rCRIT:'CRIT',rAS:'AS',rCD:'CD',rSPD:'SPD',rXP:'XP',rLS:'LS',rLUCK:'LUCK',rARMOR:'ARMOR',rPICK:'PICKUP'};
-const PERK_CAP={DMG:.35,HP:250,CRIT:.15,AS:.20,CD:.20,SPD:.20,XP:.50,LS:.08,LUCK:.15,ARMOR:.14,PICKUP:120};
+const PERK_CAP={DMG:.35,HP:250,CRIT:.15,AS:.30,CD:.20,SPD:.20,XP:.50,LS:.08,LUCK:.15,ARMOR:.14,PICKUP:120};
 const PERK_LABEL={DMG:'Урон',HP:'Макс.ОЗ',CRIT:'Крит',AS:'Ск.атаки',CD:'КД умений',SPD:'Скорость',XP:'Опыт',LS:'Вампиризм',LUCK:'Удача',ARMOR:'Броня',PICKUP:'Подбор'};
 // Описание целей достижений простым языком (что делать)
 const METRIC_DESC={
@@ -668,15 +668,15 @@ const SLOTS={
     {stat:'hp',base:24,label:'Макс.ОЗ'},{stat:'armor',base:0.045,label:'Броня',pct:1},
     {stat:'dmg',base:0.035,label:'Урон',pct:1},{stat:'ls',base:0.025,label:'Вампиризм',pct:1}]},
   legs:{name:'Ноги',icon:'👢',affixes:[
-    {stat:'spd',base:0.06,label:'Скорость',pct:1,ofSpd:1},{stat:'as',base:0.045,label:'Ск.атаки',pct:1},
+    {stat:'spd',base:0.06,label:'Скорость',pct:1,ofSpd:1},{stat:'as',base:0.07,label:'Ск.атаки',pct:1},
     {stat:'dash',base:0.15,label:'Рывок',pct:1},{stat:'dodge',base:0.025,label:'Уклонение',pct:1}]},
   weapon:{name:'Оружие',icon:'⚔',affixes:[
-    {stat:'dmg',base:0.06,label:'Урон',pct:1},{stat:'as',base:0.055,label:'Ск.атаки',pct:1},
+    {stat:'dmg',base:0.06,label:'Урон',pct:1},{stat:'as',base:0.085,label:'Ск.атаки',pct:1},
     {stat:'crit',base:0.028,label:'Крит',pct:1},{stat:'pierce',base:1,label:'Пробитие',int:1},
     {stat:'boss',base:0.10,label:'Урон боссам',pct:1},{stat:'freeze',base:0.06,label:'Шанс льда',pct:1},{stat:'burn',base:0.06,label:'Шанс огня',pct:1}]},
   accessory:{name:'Кольцо',icon:'💍',affixes:[
     {stat:'crit',base:0.025,label:'Крит',pct:1},{stat:'dmg',base:0.05,label:'Урон',pct:1},
-    {stat:'as',base:0.04,label:'Ск.атаки',pct:1},{stat:'luck',base:0.06,label:'Удача',pct:1},{stat:'ls',base:0.025,label:'Вампиризм',pct:1}]},
+    {stat:'as',base:0.06,label:'Ск.атаки',pct:1},{stat:'luck',base:0.06,label:'Удача',pct:1},{stat:'ls',base:0.025,label:'Вампиризм',pct:1}]},
 };
 const SLOT_KEYS=['head','body','legs','weapon'];   // accessory добавляется через slotKeys() при разблокировке
 function slotKeys(){ return (meta&&meta.unlocks&&meta.unlocks.accessory)?['head','body','legs','weapon','accessory']:SLOT_KEYS; }
@@ -876,7 +876,7 @@ const TREE_BRANCHES=[
 const TREE_NODES=[
   // Мощь — чистый урон
   {id:'m_dmg',  br:'might', glyph:'sword', max:5, base:60,  req:0, name:'Острота клинка', per:'+1.2% урона',      desc:'Весь наносимый урон увеличен',                    fmt:l=>'+'+(Math.round(12*l)/10)+'% урона'},
-  {id:'m_atk',  br:'might', glyph:'spd',   max:4, base:80,  req:3, name:'Быстрая рука',   per:'+1% скор. атаки',  desc:'Базовые атаки (ЛКМ) перезаряжаются быстрее',      fmt:l=>'+'+l+'% скор. атаки'},
+  {id:'m_atk',  br:'might', glyph:'spd',   max:4, base:80,  req:3, name:'Быстрая рука',   per:'+2% скор. атаки',  desc:'Базовые атаки (ЛКМ) перезаряжаются быстрее',      fmt:l=>'+'+(l*2)+'% скор. атаки'},
   {id:'m_crit', br:'might', glyph:'crit',  max:4, base:100, req:2, name:'Жажда битвы',    per:'+1% крит',         desc:'Выше шанс критического удара (×2.5)',             fmt:l=>'+'+l+'% крит'},
   {id:'m_cd',   br:'might', glyph:'cd',    max:3, base:120, req:2, name:'Боевой ритм',    per:'−2% КД умений',    desc:'Умения Q/E/R/X перезаряжаются быстрее',           fmt:l=>'−'+(2*l)+'% КД умений'},
   {id:'m_boss', br:'might', glyph:'fury',  max:3, base:150, req:2, name:'Гроза титанов',  per:'+2% урона боссам', desc:'Дополнительный урон боссам и Проклятым',          fmt:l=>'+'+(2*l)+'% урона боссам'},
@@ -911,7 +911,7 @@ function treeCardRect(n){ return {x:TREE_UI.colX[n._bi], y:TREE_UI.top+n._ri*(TR
 // Бонусы древа → поля игрока. Вызов: конструктор Player, СРАЗУ ПОСЛЕ applyMeta (перки достижений), ДО экипировки.
 function applyTree(pl){
   if(!meta||!meta.tree) return; const L=treeLvl;
-  pl.dmgM*=1+0.012*L('m_dmg'); pl.atkCdM*=1-0.01*L('m_atk'); pl.critBonus+=0.01*L('m_crit');
+  pl.dmgM*=1+0.012*L('m_dmg'); pl.atkCdM*=1-0.02*L('m_atk'); pl.critBonus+=0.01*L('m_crit');
   const cd=1-0.02*L('m_cd'); pl.qCdM*=cd; pl.eCdM*=cd; pl.rCdM*=cd; pl.xCdM*=cd;
   pl.bossDmgM+=0.02*L('m_boss');
   pl.maxHp+=6*L('f_hp'); pl.hpRegen+=0.4*L('f_regen');
@@ -1080,9 +1080,9 @@ function drawItemIcon(g,x,y,size,it,t){
 
 // ── Class defs ─────────────────────────────────────────────────────────────
 const CLS = {
-  swordsman: { name:'Мечник',    color:'#4a9eff', hp:140, spd:165, dmg:42, atkR:72, atkCd:0.55, qCd:8,  eCd:4,  rCd:6,  xCd:30, critChance:0.02, qName:'Волна клинка',  eName:'Рывок',           rName:'Яростный удар', xName:'Щит гнева',        desc:['Воин ближнего боя.','Высокое HP, дуговые удары.'] },
-  wizard:    { name:'Волшебник', color:'#d04bff', hp:72,  spd:140, dmg:54, atkR:320,atkCd:0.75, qCd:10, eCd:9,  rCd:8,  xCd:30, critChance:0.01, qName:'Метеор',       eName:'Ледяная вспышка', rName:'Цепная молния', xName:'Метеоритный дождь', desc:['Маг дальнего боя.', 'Огненные шары и AoE.'] },
-  archer:    { name:'Лучник',   color:'#4bff7a', hp:98,  spd:190, dmg:26, atkR:260,atkCd:0.40, qCd:7,  eCd:8,  rCd:7,  xCd:30, critChance:0.05, qName:'Шквал',        eName:'Меткий глаз',     rName:'Ливень стрел',  xName:'Смертельный залп',  desc:['Быстрый охотник.','Скорострельные стрелы.'] },
+  swordsman: { name:'Мечник',    color:'#4a9eff', hp:180, spd:165, dmg:42, atkR:72, atkCd:0.55, qCd:8,  eCd:4,  rCd:6,  xCd:30, critChance:0.02, qName:'Волна клинка',  eName:'Рывок',           rName:'Яростный удар', xName:'Щит гнева',        desc:['Воин ближнего боя.','Высокое HP, дуговые удары.'] },
+  wizard:    { name:'Волшебник', color:'#d04bff', hp:95,  spd:140, dmg:54, atkR:320,atkCd:0.75, qCd:10, eCd:9,  rCd:8,  xCd:30, critChance:0.01, qName:'Метеор',       eName:'Ледяная вспышка', rName:'Цепная молния', xName:'Метеоритный дождь', desc:['Маг дальнего боя.', 'Огненные шары и AoE.'] },
+  archer:    { name:'Лучник',   color:'#4bff7a', hp:125, spd:190, dmg:26, atkR:260,atkCd:0.40, qCd:7,  eCd:8,  rCd:7,  xCd:30, critChance:0.05, qName:'Шквал',        eName:'Меткий глаз',     rName:'Ливень стрел',  xName:'Смертельный залп',  desc:['Быстрый охотник.','Скорострельные стрелы.'] },
 };
 
 // ── Skill Trees (по классам, с пресетами tier 1→2→3) ─────────────────────
@@ -1090,6 +1090,7 @@ const SKILL_TREES = {
   swordsman: [
     { id:'s_hp1',    icon:'❤',    tier:1,                name:'+35 Макс. ОЗ',      desc:'Макс. здоровье +35 и восстановить 35 ОЗ',             apply:p=>{p.maxHp+=35;p.heal(35);} },
     { id:'s_dmg1',   icon:'⚔',    tier:1,                name:'+25% Урон',          desc:'Все атаки наносят на 25% больше урона',               apply:p=>{p.dmgM*=1.25;} },
+    { id:'s_atk1',   icon:'🗡',   tier:1,                name:'+18% Ск. атаки',     desc:'Кулдаун свинга сокращён на 18%',                      apply:p=>{p.atkCdM*=0.82;} },
     { id:'s_whirl1', icon:'🌀',   tier:1,                name:'Вихрь мечей I',      desc:'Каждый 4-й удар наносит ×3 урон',                     apply:p=>{p.bladeFury=true;p.furyThreshold=4;p.furyMult=3;p.whirlTier=1;} },
     { id:'s_wave1',  icon:'🌊',   tier:2, req:'s_dmg1',  name:'Волна клинка+',      desc:'Радиус волны ×1.4 и урон ×1.5',                       apply:p=>{p.bladeWaveR*=1.4;p.bladeWaveDM*=1.5;} },
     { id:'s_whirl2', icon:'🌀',   tier:2, req:'s_whirl1', name:'Вихрь мечей II',    desc:'Вихрь наносит ×4 урон вместо ×3',                     apply:p=>{p.furyMult=4;p.whirlTier=2;} },
@@ -1131,6 +1132,7 @@ const SKILL_TREES = {
   wizard: [
     { id:'w_hp1',    icon:'❤',   tier:1,               name:'+30 Макс. ОЗ',        desc:'Макс. здоровье +30 и восстановить 30 ОЗ',      apply:p=>{p.maxHp+=30;p.heal(30);} },
     { id:'w_dmg1',   icon:'⚔',   tier:1,               name:'+25% Урон',           desc:'Все атаки наносят на 25% больше урона',          apply:p=>{p.dmgM*=1.25;} },
+    { id:'w_atk1',   icon:'🗡',   tier:1,               name:'+18% Ск. атаки',      desc:'Кулдаун огненного болта сокращён на 18%',        apply:p=>{p.atkCdM*=0.82;} },
     { id:'w_pierce1',icon:'→',   tier:1,               name:'Пробивание',          desc:'Снаряды пробивают насквозь до 2 врагов',         apply:p=>{p.pierce+=2;} },
     { id:'w_explode',icon:'💥',  tier:2, req:'w_dmg1',  name:'Взрывное попадание',  desc:'Огненный шар взрывается при ударе AoE 70px',    apply:p=>{p.explode=true;} },
     { id:'w_extra1', icon:'✶',   tier:2, req:'w_pierce1',name:'Доп. снаряд',        desc:'Каждая атака выпускает доп. снаряд под углом',  apply:p=>{p.extraShots++;} },
@@ -1542,7 +1544,7 @@ const ARCH_UPGRADE_POOL = [
   { icon:'🩸',  name:'+4% Вампиризм',          desc:'Атаки восстанавливают ещё 4% нанесённого урона',     apply:p=>{p.lifesteal=Math.min(p.classId==='swordsman'?0.15:0.10,p.lifesteal+0.04);} },
   { icon:'❤',  name:'+40 Макс. ОЗ',           desc:'Макс. здоровье +40 и восстановить 40 ОЗ',            apply:p=>{p.maxHp+=40;p.heal(40);} },
   { icon:'👟',  name:'+8% Скорость бега',      desc:'Скорость передвижения +8%',                          apply:p=>{p.spd*=1.08;} },
-  { icon:'🗡',  name:'+15% Ск. атаки (ЛКМ)',   desc:'Кулдаун ЛКМ сокращён на 15%',                        apply:p=>{p.atkCdM*=0.85;} },
+  { icon:'🗡',  name:'+18% Ск. атаки (ЛКМ)',   desc:'Кулдаун ЛКМ сокращён на 18%',                        apply:p=>{p.atkCdM*=0.82;} },
   { icon:'🛡',  name:'-6% Получаемый урон',    desc:'Входящий урон снижен ещё на 6%',                     apply:p=>{p.dmgReduction=Math.min(0.5,p.dmgReduction+0.06);} },
 ].map((u,i)=>Object.assign(u,{id:'arch_pool_'+i,tier:2}));   // id/tier для совместимости с рендером drawLevelup (без гейта takenSkills — репитабл)
 
@@ -2397,7 +2399,7 @@ class Player {
 
   attack(projs, parts) {
     if (this.atkTimer > 0) return;
-    this.atkTimer = this.c.atkCd * this.atkCdM;
+    this.atkTimer = Math.max(0.12, this.c.atkCd * this.atkCdM);   // пол 0.12с — предохранитель при стаке ск. атаки
     const combo = this.comboStep; this.atkCombo = combo; this.comboStep = (this.comboStep+1)%3;   // 3-шаговое комбо (анимация)
     this.atkAnim = 0.2; this.atkAnimMax = 0.2;   // облик: отдача посоха/лука (у мечника доминирует swingTimer)
     if (this.classId==='archer' && combo===2){ this.atkAnim=0.34; this.atkAnimMax=0.34; }   // лучник: мощный 3-й выстрел — дольше натяг
@@ -3745,8 +3747,8 @@ function drawPx(x,y,cell,key,col){ const p=PXG[key]||PXG.star; ctx.fillStyle=col
   for(let r=0;r<7;r++){ const row=p[r]; for(let cIdx=0;cIdx<7;cIdx++){ if(row[cIdx]==='X')ctx.fillRect(Math.round(x+cIdx*cell),Math.round(y+r*cell),Math.ceil(cell),Math.ceil(cell)); } } }
 // Дизайн-система иконок апгрейдов: id-префикс → [глиф, цвет] (единый пиксель-стиль карточек)
 function upgGlyph(u){ const id=(u&&u.id)||'';
-  const M=[['swav','wave','#4a9eff'],['s_wave','wave','#4a9eff'],['sfur','fury','#ffcc44'],['sdash','dash','#88ccff'],['s_shield','shield','#88aaff'],['s_whirl','sword','#9fc2e0'],['s_pass','ring','#4499ff'],['s_hp','hp','#66dd66'],['s_dmg','sword','#ff8866'],
-  ['wmet','meteor','#ff6a33'],['w_meteor','meteor','#ff9a33'],['w_mega','meteor','#ffaa55'],['wfro','frost','#66ddff'],['wchn','chain','#aaeeff'],['w_pass','meteor','#ff7744'],['w_pierce','pierce','#cfa9ff'],['w_extra','arrow','#cfa9ff'],['w_explode','fury','#ff8844'],['w_hp','hp','#66dd66'],['w_dmg','sword','#ff8866'],
+  const M=[['swav','wave','#4a9eff'],['s_wave','wave','#4a9eff'],['sfur','fury','#ffcc44'],['sdash','dash','#88ccff'],['s_shield','shield','#88aaff'],['s_whirl','sword','#9fc2e0'],['s_pass','ring','#4499ff'],['s_hp','hp','#66dd66'],['s_dmg','sword','#ff8866'],['s_atk','spd','#ffcf7a'],
+  ['wmet','meteor','#ff6a33'],['w_meteor','meteor','#ff9a33'],['w_mega','meteor','#ffaa55'],['wfro','frost','#66ddff'],['wchn','chain','#aaeeff'],['w_pass','meteor','#ff7744'],['w_pierce','pierce','#cfa9ff'],['w_extra','arrow','#cfa9ff'],['w_explode','fury','#ff8844'],['w_hp','hp','#66dd66'],['w_dmg','sword','#ff8866'],['w_atk','spd','#ffcf7a'],
   ['aq','arrow','#4bff7a'],['ae','eagle','#ffee44'],['ar','rain','#88ff44'],['ax','crit','#ffaa00'],['a_poison','poison','#9adf4a'],['a_mshot','arrow','#7dff9d'],['a_bounce','dash','#7dff9d'],['a_pierce','pierce','#7dff9d'],['a_sniper','crit','#ffd24a'],['a_atk','spd','#7dff9d'],['a_dmg','sword','#ff8866'],['a_pass','eagle','#ffd24a'],
   ['au_','star','#ffd24a']];
   for(const m of M){ if(id.indexOf(m[0])===0){ if(m[0]==='au_'&&typeof player!=='undefined'&&player&&player.arch)return [m[1],player.arch.color]; return [m[1],m[2]]; } }
