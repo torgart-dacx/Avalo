@@ -2661,15 +2661,15 @@ const ET = {
   goblin:   {name:'Гоблин',     color:'#55cc44',hp:35, spd:128,dmg:10,r:14,xp:10, atkCd:1.0,atkR:28},
   skeleton: {name:'Скелет',     color:'#ccccaa',hp:60, spd:82, dmg:20,r:16,xp:20, atkCd:1.2,atkR:30},
   darkmage: {name:'Тёмный маг', color:'#9933cc',hp:55, spd:58, dmg:20,r:15,xp:30, atkCd:1.9,atkR:210,ranged:true},
-  troll:    {name:'Тролль',     color:'#775533',hp:2400,spd:52,dmg:30,r:52,xp:100,atkCd:1.8,atkR:44,boss:true},
+  troll:    {name:'Тролль',     color:'#775533',hp:4200,spd:52,dmg:30,r:52,xp:140,atkCd:1.8,atkR:44,boss:true},
   banshee:  {name:'Баньши',     color:'#66aaff',hp:40, spd:165,dmg:16,r:13,xp:25, atkCd:0.9,atkR:28},
   golem:    {name:'Голем',      color:'#aa8855',hp:140,spd:40, dmg:25,r:24,xp:50, atkCd:2.0,atkR:36},
   wraith:   {name:'Призрак',    color:'#cc44cc',hp:45, spd:95, dmg:18,r:14,xp:35, atkCd:1.5,atkR:200,ranged:true},
   cursed:   {name:'Проклятый',  color:'#6622aa',hp:2800,spd:34,dmg:50,r:40,xp:300,atkCd:2.6,atkR:52},
   // ── Боссы (идея 5) ──
-  lich:     {name:'Лич',         color:'#8844cc',hp:2900,spd:46,dmg:26,r:50,xp:380,atkCd:2.2,atkR:230,ranged:true,boss:true},   // щит-неуязвимость + призыв
-  titan:    {name:'Голем-Титан', color:'#9a8456',hp:3900,spd:34,dmg:34,r:60,xp:440,atkCd:2.0,atkR:48,boss:true},                // землетрясение + раскол
-  frostlord:{name:'Ледяной Владыка',color:'#5bc8f0',hp:3100,spd:42,dmg:24,r:54,xp:420,atkCd:2.2,atkR:240,ranged:true,boss:true},// поля заморозки + ледяная нова
+  lich:     {name:'Лич',         color:'#8844cc',hp:5200,spd:46,dmg:26,r:50,xp:460,atkCd:2.2,atkR:230,ranged:true,boss:true},   // щит-неуязвимость + призыв
+  titan:    {name:'Голем-Титан', color:'#9a8456',hp:6800,spd:34,dmg:34,r:60,xp:540,atkCd:2.0,atkR:48,boss:true},                // землетрясение + раскол
+  frostlord:{name:'Ледяной Владыка',color:'#5bc8f0',hp:5600,spd:42,dmg:24,r:54,xp:500,atkCd:2.2,atkR:240,ranged:true,boss:true},// поля заморозки + ледяная нова
   golemlord:{name:'Голем-Владыка',color:'#cc4422',hp:14000,spd:40,dmg:36,r:72,xp:1200,atkCd:2.0,atkR:280,ranged:true,boss:true},// мега-босс: огонь/землетрясение/стан/рывок/щит
   // ── Новые монстры с уникальными механиками ──
   charger:  {name:'Носорог',    color:'#cc7744',hp:95, spd:72, dmg:26,r:20,xp:45, atkCd:1.5,atkR:34, charger:true},   // телеграф + рывок
@@ -2688,6 +2688,27 @@ const ET = {
   crystalgolem: {name:'Кристаллический голем',color:'#66ccdd',hp:2400,spd:30,dmg:38,r:36,xp:300,atkCd:2.0,atkR:42,elite:true,reflect:true},    // отражает дальний урон
   reaper:       {name:'Жнец',                color:'#aa66cc',hp:2400,spd:64,dmg:38,r:32,xp:300,atkCd:1.8,atkR:40,elite:true,reaper:true},       // телепорт-рывок + широкий замах
 };
+// ── 🧬 +60 вариантов монстров (12 обычных баз × 5 тиров) — генерируются из базовых типов ──
+// Тир задаёт множители ХП/урона/скорости/опыта + тинт-ауру; спец-механики (charger/bomber/…) наследуются через Object.assign.
+const VAR_TIERS=[
+  {key:'ash',  suf:'Пепла',    hp:0.7, dmg:1.15,spd:1.30,xp:1.2,tint:'#c8c8d8',wave:4},    // быстрый и хрупкий
+  {key:'blood',suf:'Крови',    hp:1.6, dmg:1.6, spd:1.0, xp:1.9,tint:'#ff4433',wave:8},    // больно бьёт
+  {key:'obs',  suf:'Обсидиана',hp:3.4, dmg:1.3, spd:0.72,xp:2.8,tint:'#8866dd',wave:12},   // медленный танк
+  {key:'storm',suf:'Шторма',   hp:1.25,dmg:1.45,spd:1.60,xp:2.3,tint:'#55ccff',wave:16},   // очень быстрый
+  {key:'abyss',suf:'Бездны',   hp:4.8, dmg:2.0, spd:1.1, xp:4.2,tint:'#dd2277',wave:20},   // мини-элита
+];
+const VAR_BASES=['goblin','skeleton','darkmage','banshee','golem','wraith','charger','splitter','summoner','bomber','phantom','spitter'];
+VAR_BASES.forEach(b=>{ const base=ET[b]; VAR_TIERS.forEach(tv=>{ const id=tv.key+'_'+b;
+  ET[id]=Object.assign({},base,{ name:base.name+' '+tv.suf, spr:b, tint:tv.tint, vtier:tv.key, minWave:tv.wave,
+    hp:Math.round(base.hp*tv.hp), dmg:Math.round(base.dmg*tv.dmg), spd:Math.round(base.spd*tv.spd), xp:Math.round(base.xp*tv.xp),
+    r:Math.min(28,Math.round(base.r*((tv.key==='obs'||tv.key==='abyss')?1.25:1))) });
+  E_ROLE[id]=E_ROLE[b]||'melee'; if(E_SHAPE[b])E_SHAPE[id]=E_SHAPE[b];   // роль/силуэт наследуются (контур, бейдж бестиария)
+});});
+// 🧬 вариант по волне/угрозе: чем дальше, тем чаще обычный тип приходит тир-вариантом (боссы/элиты/варианты не мутируют)
+function variantOf(id,n){ const t=ET[id]; if(!t||t.boss||t.elite||t.vtier)return id;
+  const cand=VAR_TIERS.filter(v=>n>=v.wave&&ET[v.key+'_'+id]); if(!cand.length)return id;
+  if(Math.random()>=Math.min(0.55,0.10+n*0.02))return id;
+  return cand[Math.floor(Math.random()*cand.length)].key+'_'+id; }
 
 class Enemy {
   constructor(typeId, x, y, hpMult=1, dmgScale=1) {
@@ -2741,7 +2762,7 @@ class Enemy {
     if(typeof floats!=='undefined' && (src==='q'||src==='e'||src==='r'||src==='x'||src==='passive'||isCrit)){ floats.push(new FloatText(this.x+(Math.random()-.5)*10,this.y-12,(isCrit?'✦':'')+Math.round(dmg),isCrit?'#ffffff':'#ffd060',isCrit?16:11)); }   // #2: цифры урона умений (+крит)
     if(typeof SFX!=='undefined'){ if(isCrit)SFX.play('crit'); else SFX.play('hit'); }
     for(let i=0;i<5;i++) parts.push(new Particle(this.x,this.y,(Math.random()-.5)*180,(Math.random()-.5)*180,'#ffaaaa',0.35,2));
-    if(this.hp<=0){this.hp=0;this.dead=true;try{MFX.death(this.typeId,this.x,this.y,this.r,parts,this.t.color);}catch(_e){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,s=110+Math.random()*160;parts.push(new Particle(this.x,this.y,Math.cos(a)*s,Math.sin(a)*s,this.t.color,0.8,3+Math.random()*3));}}
+    if(this.hp<=0){this.hp=0;this.dead=true;try{MFX.death(this.t.spr||this.typeId,this.x,this.y,this.r,parts,this.t.color);}catch(_e){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,s=110+Math.random()*160;parts.push(new Particle(this.x,this.y,Math.cos(a)*s,Math.sin(a)*s,this.t.color,0.8,3+Math.random()*3));}}
       // Идея 1: трекинг убийства
       track('kills_total'); track('kills_'+this.typeId); if(this.t.elite)track('kills_elite');   // фича 3: метрика испытаний
       if(typeof runStats!=='undefined'&&runStats&&runStats.killsByType)runStats.killsByType[this.typeId]=(runStats.killsByType[this.typeId]||0)+1;   // 📊 фича 6: топ убитых
@@ -2782,12 +2803,12 @@ class Enemy {
       if(this.t.splitter&&this.gen<1&&enemies.length<240){for(let k=0;k<3;k++){const a=Math.random()*Math.PI*2;const c=new Enemy('splitter',this.x+Math.cos(a)*16,this.y+Math.sin(a)*16,1,1);c.gen=1;c.r=Math.round(ET.splitter.r*0.6);c.hp=c.maxHp=Math.round(ET.splitter.hp*0.4);c.xp=10;c.dmg=Math.max(4,Math.round(this.dmg*0.6));c.roam=this.roam;c.aggroR=this.aggroR;enemies.push(c);}}
     }
   }
-  tg(r,mult,dur,chill,shake){ this.tgT=dur; this.tgMax=dur; this.tgR=r; this.tgDmg=mult; this.tgChill=chill||0; this.tgShake=shake||0; }   // телеграф: запланировать AoE-удар через dur сек (красный круг — предупреждение)
+  tg(r,mult,dur,chill,shake,stun){ this.tgT=dur; this.tgMax=dur; this.tgR=r; this.tgDmg=mult; this.tgChill=chill||0; this.tgShake=shake||0; this.tgStun=stun||0; }   // телеграф: запланировать AoE-удар через dur сек (красный круг — предупреждение)
   update(dt, player, projs, parts) {
     if(this.dead) return;
     if(this.stunT>0){ this.stunT-=dt; if(this.flash>0)this.flash-=dt; this.wobble+=dt*3; if(this.tgT>0)this.tgT-=dt; this.x=clamp(this.x,this.r+20,worldW-20-this.r); this.y=clamp(this.y,this.r+20,worldH-20-this.r); return; }   // оглушён — не двигается/не атакует; клэмп ОБЯЗАТЕЛЕН (фикс: стан+отброс выталкивал боссов за карту)
     this.wobble+=dt*3;
-    this.spawnT=(this.spawnT||0)+dt; if(typeof MFX!=='undefined'&&MFX.ambInt(this.typeId)>0){ this._ambT-=dt; if(this._ambT<=0&&parts&&parts.length<240){ try{MFX.ambient(this.typeId,this.x,this.y,this.r,parts);}catch(_e){} this._ambT=MFX.ambInt(this.typeId); } }   // редизайн: эмбиент-частицы (капы по числу частиц)
+    this.spawnT=(this.spawnT||0)+dt; if(typeof MFX!=='undefined'&&MFX.ambInt(this.t.spr||this.typeId)>0){ this._ambT-=dt; if(this._ambT<=0&&parts&&parts.length<240){ try{MFX.ambient(this.t.spr||this.typeId,this.x,this.y,this.r,parts);}catch(_e){} this._ambT=MFX.ambInt(this.t.spr||this.typeId); } }   // редизайн: эмбиент-частицы (капы по числу частиц)
     // 💢 Бафф «берсерк»: монстр не умер за 30с (босс — 60с) → каждые 10с стак: +10% урона, +10% ск.атаки, +20% размера, кровавая аура (кап 5)
     if(gameMode!=='testroom'&&(!this.roam||dist(this,player)<this.aggroR)){ this.aliveT+=dt;   // рейдж копится только в бою (роумеры вне агро не звереют)
       const rageStart=this.t.boss?60:30;
@@ -2799,7 +2820,7 @@ class Enemy {
       if(this.rageStacks>0&&parts.length<230&&Math.random()<0.10+0.06*this.rageStacks){ const a=Math.random()*Math.PI*2,rr=this.r*(0.7+Math.random()*0.6);   // кровавые огоньки ауры
         parts.push(new Particle(this.x+Math.cos(a)*rr,this.y+Math.sin(a)*rr,(Math.random()-.5)*30,-40-Math.random()*40,'#ff2a2a',0.55,2,{glow:true})); } }
     if(typeof MODS!=='undefined'&&MODS.regen&&this.hp<this.maxHp&&this.hp>0)this.hp=Math.min(this.maxHp,this.hp+this.maxHp*0.012*dt);   // веха «Регенерация»
-    if(this.tgT>0){ this.tgT-=dt; if(this.tgT<=0){ const pr=this.tgR; rings.push(new Ring(this.x,this.y,'#ff5533',pr)); rings.push(new Ring(this.x,this.y,'#ffcc44',pr*0.6)); for(let i=0;i<26;i++){const a=Math.random()*Math.PI*2,sr=Math.random()*pr;parts.push(new Particle(this.x+Math.cos(a)*sr,this.y+Math.sin(a)*sr,Math.cos(a)*155,Math.sin(a)*155,'#ff7733',0.65,4));} if(player&&dist(this,player)<pr+player.r){ player.takeDamage(Math.round(this.dmg*this.tgDmg)); if(this.tgChill>0)player.chillT=Math.max(player.chillT,this.tgChill); } if(this.tgShake>0)addShake(this.tgShake); } }   // резолв телеграфа
+    if(this.tgT>0){ this.tgT-=dt; if(this.tgT<=0){ const pr=this.tgR; rings.push(new Ring(this.x,this.y,'#ff5533',pr)); rings.push(new Ring(this.x,this.y,'#ffcc44',pr*0.6)); for(let i=0;i<26;i++){const a=Math.random()*Math.PI*2,sr=Math.random()*pr;parts.push(new Particle(this.x+Math.cos(a)*sr,this.y+Math.sin(a)*sr,Math.cos(a)*155,Math.sin(a)*155,'#ff7733',0.65,4));} if(player&&dist(this,player)<pr+player.r){ player.takeDamage(Math.round(this.dmg*this.tgDmg)); if(this.tgChill>0)player.chillT=Math.max(player.chillT,this.tgChill); if(this.tgStun>0){player.stunT=Math.max(player.stunT||0,this.tgStun);} } if(this.tgShake>0)addShake(this.tgShake); } }   // резолв телеграфа
     const curSpd=this.slow>0?this.spd*0.33:this.spd;
     if(this.slow>0) this.slow=Math.max(0,this.slow-dt);
     if(this.poisonT>0){this.poisonT-=dt;this.hp-=this.poison*dt;if(Math.random()<0.25)parts.push(new Particle(this.x,this.y-this.r*0.4,(Math.random()-.5)*40,-26,'#7ad13a',0.45,2));if(this.hp<=0){this.hp=0;this.dead=true;}}  // лучник: тик яда
@@ -2924,20 +2945,22 @@ class Enemy {
         if(dist(this,player)<this.r+player.r+12){ player.takeDamage(Math.round(this.dmg*1.3)); this.lungeT=0; rings.push(new Ring(this.x,this.y,'#ff8844',110)); addShake(4); } }
       this.bk-=dt;
       if(this.bk<=0&&aggro){
-        this.bk=(4.2+Math.random()*1.8)*haste; this.bkStep=(this.bkStep+1)%5;
+        this.bk=(3.8+Math.random()*1.6)*haste; this.bkStep=(this.bkStep+1)%7;   // усиление 2026-07-12: 7 умений, чаще
         switch(this.bkStep){
           case 0:{ const n=deadly?14:(mid?10:7), col=this.t.color;   // радиальный залп снарядов
             for(let k=0;k<n;k++){ const a=k/n*Math.PI*2+Math.random()*0.3; projs.push(new Proj(this.x,this.y,a,205,Math.round(this.dmg*0.75),col,7,true)); }
             rings.push(new Ring(this.x,this.y,col,90)); break; }
           case 1:{ if(this.tgT<=0)this.tg(mid?230:170,deadly?1.5:1.1,0.8,0,4.5); break; }   // сотрясение (шире и больнее при эскалации)
-          case 2:{ if(enemies.length<220){ const n2=deadly?3:2;   // призыв свиты
-            for(let k=0;k<n2;k++){ const a=Math.random()*Math.PI*2; const mob=new Enemy(Math.random()<0.5?'goblin':'skeleton',clamp(this.x+Math.cos(a)*52,40,worldW-40),clamp(this.y+Math.sin(a)*52,40,worldH-40),1+0.08*Math.max(0,wave-1),Math.pow(1.032,Math.max(0,wave-1))); mob.roam=this.roam; mob.aggroR=this.aggroR; mob.summoned=true; enemies.push(mob); }
+          case 2:{ if(enemies.length<220){ const n2=deadly?5:(mid?4:3);   // призыв свиты (массовее)
+            for(let k=0;k<n2;k++){ const a=Math.random()*Math.PI*2; const mob=new Enemy(variantOf(Math.random()<0.5?'goblin':'skeleton',wave),clamp(this.x+Math.cos(a)*52,40,worldW-40),clamp(this.y+Math.sin(a)*52,40,worldH-40),1+0.08*Math.max(0,wave-1),Math.pow(1.032,Math.max(0,wave-1))); mob.roam=this.roam; mob.aggroR=this.aggroR; mob.summoned=true; enemies.push(mob); }
             for(let i=0;i<10;i++){const a2=Math.random()*Math.PI*2;parts.push(new Particle(this.x,this.y,Math.cos(a2)*120,Math.sin(a2)*120,'#cc66ff',0.5,3));} } break; }
           case 3:{ if(mid&&typeof groundFX!=='undefined'&&groundFX.length<12){ const zr=deadly?130:95;   // зона смерти под героем (открывается с 50% ОЗ)
             groundFX.push({x:player.x,y:player.y,r:zr,life:deadly?4:3,max:deadly?4:3,kind:'poison',arm:0.5}); rings.push(new Ring(player.x,player.y,'#88cc33',zr)); } break; }
           case 4:{ if(!this.t.ranged&&this.typeId!=='golemlord'&&d>130){ this.lungeW=0.5; }   // мили: скачок к герою · рэйндж: прицельный веер
             else { const a=Math.atan2(dy,dx), n3=deadly?7:(mid?5:3); for(let k=0;k<n3;k++)projs.push(new Proj(this.x,this.y,a+(k-(n3-1)/2)*0.16,240,Math.round(this.dmg*0.85),'#ff5522',8,true)); }
             break; }
+          case 5:{ if(this.tgT<=0)this.tg(mid?260:200,0.6,0.9,0,5,deadly?1.1:0.8); for(let i=0;i<12;i++){const a2=Math.random()*Math.PI*2;parts.push(new Particle(this.x+Math.cos(a2)*this.r,this.y+Math.sin(a2)*this.r,Math.cos(a2)*90,Math.sin(a2)*90,'#ffee44',0.5,3));} break; }   // 💫 оглушающее кольцо (телеграф 0.9с → стан игрока)
+          case 6:{ if(typeof frostZones!=='undefined'&&frostZones.length<14){ const n4=deadly?3:2; for(let k=0;k<n4;k++){ const a3=Math.random()*Math.PI*2,d4=k===0?0:60+Math.random()*80; frostZones.push({x:clamp(player.x+Math.cos(a3)*d4,60,worldW-60),y:clamp(player.y+Math.sin(a3)*d4,60,worldH-60),r:mid?120:95,life:5,arm:0.5}); } rings.push(new Ring(player.x,player.y,'#88ddff',mid?120:95)); } break; }   // ❄ вязкие топи под героем (замедление, взводятся 0.5с)
         }
       }
     }
@@ -2967,7 +2990,8 @@ class Enemy {
     if(this.stunT>0){ctx.strokeStyle='#ffee44';ctx.lineWidth=2;ctx.globalAlpha=0.5+Math.sin(Date.now()/90)*0.3;ctx.beginPath();ctx.arc(this.x,this.y,this.r+7,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;ctx.fillStyle='#ffee44';ctx.font='10px Segoe UI';ctx.textAlign='center';ctx.fillText('⚡',this.x,this.y-this.r-6);ctx.textAlign='left';}   // оглушён
     if(this.typeId==='golemlord'&&this.boltT>0){ ctx.save(); ctx.strokeStyle='#ffffaa'; ctx.shadowColor='#ffff44'; ctx.shadowBlur=16; ctx.globalAlpha=clamp(this.boltT/0.4,0,1); const len=190; for(let b=0;b<7;b++){ const ba=b/7*Math.PI*2+this.boltT*9; ctx.lineWidth=1.6+Math.random()*1.6; ctx.beginPath(); ctx.moveTo(this.x,this.y); for(let s=1;s<=6;s++){ const f=s/6, perp=(Math.random()-0.5)*28*(1-f*0.3); ctx.lineTo(this.x+Math.cos(ba)*len*f+Math.cos(ba+Math.PI/2)*perp, this.y+Math.sin(ba)*len*f+Math.sin(ba+Math.PI/2)*perp); } ctx.stroke(); } ctx.restore(); ctx.shadowBlur=0; ctx.globalAlpha=1; }   // анимированная молния
     ctx.shadowColor=this.slow>0?'#88ccff':(bossGlow||E_ROLECOL[E_ROLE[this.typeId]]||this.t.color);ctx.shadowBlur=bossGlow?22:10;
-    let _drew=false; const _spr=(typeof MSPR!=='undefined')?MSPR[this.typeId]:null;
+    if(this.t.tint){ ctx.save(); ctx.shadowBlur=0; ctx.globalAlpha=0.28; ctx.fillStyle=this.t.tint; ctx.beginPath(); ctx.arc(this.x,this.y,this.r*1.45,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=0.85; ctx.strokeStyle=this.t.tint; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(this.x,this.y,this.r*1.28,0,Math.PI*2); ctx.stroke(); ctx.restore(); }   // 🧬 аура тир-варианта (идентификация)
+    let _drew=false; const _spr=(typeof MSPR!=='undefined')?MSPR[this.t.spr||this.typeId]:null;   // 🧬 вариант рисуется спрайтом базы
     if(_spr){ try{   // рисуем НОВЫЙ спрайт всегда (в т.ч. при ударе); вспышка — поверх него, без отката к старой форме
         MSPR.setState(this);
         const _t=Date.now()/1000, _sp=sSmooth(clamp((this.spawnT==null?9:this.spawnT)/0.42,0,1));
@@ -3065,7 +3089,7 @@ function spawnPos(){
   return {x:44,y:44};
 }
 // уровни аркады: заметный рост ОЗ (+25%/ур.) и урона (+12%/ур.) поверх волнового
-function spawnWave(n){const _lvl=Math.floor((n-1)/5);const hpMult=(1+0.08*(n-1))*Math.pow(1.25,_lvl);const dmgScale=Math.min(4.2,Math.pow(1.045,n-1)*Math.pow(1.12,_lvl));const dm=(typeof MODS!=='undefined'&&MODS.dense)?1.4:1;const list=[];buildWave(n).forEach(d=>{const cnt=Math.round(d.cnt*(d.id==='golemlord'||ET[d.id].boss?1:dm));for(let i=0;i<cnt;i++){const s=spawnPos();list.push(new Enemy(d.id,s.x+(Math.random()-.5)*30,s.y+(Math.random()-.5)*30,hpMult,dmgScale));}});return list;}
+function spawnWave(n){const _lvl=Math.floor((n-1)/5);const hpMult=(1+0.08*(n-1))*Math.pow(1.25,_lvl);const dmgScale=Math.min(4.2,Math.pow(1.045,n-1)*Math.pow(1.12,_lvl));const dm=(typeof MODS!=='undefined'&&MODS.dense)?1.4:1;const wob=0.65+Math.random()*0.9;const list=[];buildWave(n).forEach(d=>{const isB=d.id==='golemlord'||ET[d.id].boss;const cnt=Math.max(isB?1:1,Math.round(d.cnt*(isB?1:dm*wob)));for(let i=0;i<cnt;i++){const s=spawnPos();list.push(new Enemy(isB?d.id:variantOf(d.id,n),s.x+(Math.random()-.5)*30,s.y+(Math.random()-.5)*30,hpMult,dmgScale));}});return list;}   // 🌪 нестабильные волны: ×0.65–1.55 к численности + тир-варианты
 
 // ── Фича 5: Арены-события (порталы Бездны, только аркада) ──────────────────
 // Пары алтаря: благословение+проклятие до конца забега (пре-ролл в evOpen)
@@ -3208,14 +3232,14 @@ function pickOwEnemy(){
   if(w>=5)pool.push(['corruptknight',2],['plaguebearer',2],['berserker',2],['mirror',2],['voidavatar',2],['crystalgolem',2],['reaper',2]);   // элиты-роумеры (чаще)
   if(w>=8)pool.push(['lich',1],['titan',1],['frostlord',1]);   // боссы-роумеры на высокой угрозе (редко)
   const total=pool.reduce((s,p)=>s+p[1],0);let r=Math.random()*total;
-  for(const[id,wt]of pool){r-=wt;if(r<=0)return id;}
-  return 'goblin';
+  for(const[id,wt]of pool){r-=wt;if(r<=0)return variantOf(id,wave);}   // 🧬 тир-варианты по угрозе
+  return variantOf('goblin',wave);
 }
 function spawnRoamer(){
   // item4: спавн в кольце 480–800px вокруг героя (сразу за краем экрана), не по всей карте
   const a=Math.random()*Math.PI*2, rd=480+Math.random()*320;
   const x=clamp(player.x+Math.cos(a)*rd,40,worldW-40), y=clamp(player.y+Math.sin(a)*rd,40,worldH-40);
-  const hpMult=1+0.08*(wave-1),dmgScale=Math.min(3.2,Math.pow(1.045,wave-1));
+  const hpMult=(1+0.08*(wave-1))*1.7,dmgScale=Math.min(4.0,Math.pow(1.045,wave-1)*1.3);   // 🌍 rework: меньше монстров, но сильнее (×1.7 ХП, ×1.3 урон)
   const e=new Enemy(pickOwEnemy(),x,y,hpMult,dmgScale);
   e.roam=true;e.wx=x;e.wy=y;
   enemies.push(e);
@@ -3225,11 +3249,16 @@ function owSpawnTick(dt){
   if(owThreatT>=22){owThreatT=0;wave++;trackMax('max_threat_ow',wave);if(wave===15)track('ow_threat_peaks');if(wave%5===0){milestoneReached(wave/5,player?player.x:400,player?player.y:140);}else{announce={show:true,timer:2.2,text:`⚠ Угроза возросла (ур. ${wave})`,sub:'Врагов больше, и они сильнее'};}if(typeof MUSIC!=='undefined')MUSIC.onThreatRise();
     if(wave%7===0&&!enemies.some(e=>e.typeId==='golemlord')){const a=Math.random()*Math.PI*2,rd=560;const gx=clamp(player.x+Math.cos(a)*rd,40,worldW-40),gy=clamp(player.y+Math.sin(a)*rd,40,worldH-40);const gl=new Enemy('golemlord',gx,gy,1+0.08*(wave-1),Math.pow(1.032,wave-1));gl.roam=true;gl.wx=gx;gl.wy=gy;enemies.push(gl);announce={show:true,timer:2.6,text:'👑 ГОЛЕМ-ВЛАДЫКА ПРОБУДИЛСЯ',sub:'Адский главарь вышел на охоту'};if(typeof SFX!=='undefined')SFX.play('boss');}   // мега-босс на угрозе 7/14/21… (только 1 на карте)
   }
-  const cap=Math.min(240,54+wave*13);   // item5: плотность ↑ (кап 240; при просадке fps вернуть 220)
+  // 🌪 нестабильный спавн: фазы затишья и внезапные ВОЛНЫ ТЬМЫ (сурж)
+  owSurgeT-=dt;
+  if(owSurgeT<=0){ owSurge=!owSurge;
+    if(owSurge){ owSurgeT=6+Math.random()*6; announce={show:true,timer:2.2,text:'🌑 ВОЛНА ТЬМЫ',sub:'Бездна выплёскивается — держись!'}; if(typeof SFX!=='undefined')SFX.play('wave'); const burst=4+Math.floor(Math.random()*4)+Math.floor(wave/4); for(let i=0;i<burst&&enemies.length<200;i++)spawnRoamer(); }
+    else owSurgeT=9+Math.random()*13; }
+  const cap=Math.min(110,26+wave*6);   // 🌍 rework: монстров МЕНЬШЕ (кап 110), но каждый сильнее
   owSpawnT-=dt;
   if(owSpawnT<=0&&enemies.length<cap){
-    owSpawnT=Math.max(0.45,1.9-wave*0.11);
-    const batch=(1+Math.floor(Math.random()*2)+Math.floor(wave/3))*3;
+    owSpawnT=Math.max(0.5,2.2-wave*0.1)*(owSurge?0.35:1.7);
+    const batch=Math.max(1,Math.round((1+Math.random()*2+wave/4)*(owSurge?2:0.7)));
     for(let i=0;i<batch&&enemies.length<cap;i++)spawnRoamer();
   }
 }
@@ -3246,7 +3275,7 @@ let gameMode='arcade';
 let dungeonRooms=[],currentRoomId=0,dungeonFade=0,dungeonFadeDir=0,dungeonNextRoom=-1,dungeonFromDir='east';
 // F5: мир и камера. Для arcade/dungeon мир = экран 800x600, камера не двигается.
 let worldW=800, worldH=600, camX=0, camY=0;
-let owSpawnT=0, owThreatT=0;   // таймеры спавна и роста угрозы в открытом мире
+let owSpawnT=0, owThreatT=0, owSurge=false, owSurgeT=8;   // таймеры спавна/угрозы + пульс-фазы (затишье/сурж)
 
 // Универсальная камера (редизайн 1280×720): мир больше экрана → follow+clamp; меньше → фикс-центр (отриц. cam)
 function updateCam(){
@@ -3274,7 +3303,7 @@ function initGame(classId){
   } else if(gameMode==='openworld'){
     worldW=3000;worldH=2000;dungeonRooms=[];
     player.x=worldW/2;player.y=worldH/2;
-    wave=1;owSpawnT=0;owThreatT=0;
+    wave=1;owSpawnT=0;owThreatT=0;owSurge=false;owSurgeT=8;
     for(let i=0;i<30;i++)spawnRoamer();          // стартовая россыпь монстров (×3)
     announce={show:true,timer:2.8,text:'🌍 Открытый мир Авало',sub:'Исследуй карту. Угроза растёт со временем!'};
     state='play';
@@ -4612,7 +4641,7 @@ function drawBestiary(){
   const ids=Object.keys(ET), rowH=56;
   ids.forEach((id,i)=>{
     const y=72+i*rowH-bestScroll; if(y<20||y>560)return;
-    const t=ET[id], g=MONSTER_GUIDE[id]||{role:'',desc:''};
+    const t=ET[id], g=MONSTER_GUIDE[id]||MONSTER_GUIDE[t.spr]||{role:'',desc:''};
     const role=E_ROLE[id]||'melee', tier=role==='boss'?'БОСС':role==='elite'?'ЭЛИТА':'ОБЫЧНЫЙ', tcol=role==='boss'?'#ff5544':role==='elite'?'#cc66ff':'#5ba8e0', boss=(role==='boss');
     // 📜 Пиксель+ (вариант B): строка на pxPanel, кант и заклёпки в цвет роли
     pxPanel(24,y,752,rowH-6, boss?'rgba(46,20,20,0.9)':role==='elite'?'rgba(34,20,46,0.9)':'rgba(20,18,32,0.85)', boss?'#cc5544':role==='elite'?'#aa55cc':'#33304a');
