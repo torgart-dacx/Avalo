@@ -493,6 +493,7 @@ function loadSave(){
   if(meta.tutorialDone==null)meta.tutorialDone=false;                // онбординг: туториал первого забега
   if(!meta.tips)meta.tips={};                                        // одноразовые контекстные подсказки
   if(!meta.archIcons)meta.archIcons={};                              // ⭐ купленные косметические эмблемы архетипов {key:1}
+  if(!meta.stashCap)meta.stashCap=40;                                // 🎒 ёмкость сундука (база 40, докупка до 100)
   if(meta.avatar==null)meta.avatar=0;                                // 🙂 аватар профиля (id из AVATARS; клэмп — в drawAvatar)
   stats=meta.stats; recomputePerks();
 }
@@ -686,6 +687,9 @@ const PROD_DROP=0.045;     // прод: шанс дропа на слот (чу�
 const PROD_RWEIGHT=[620,280,80,18,1.97,0.03];   // прод-редкости: Божественный ≈0.003% с обычных
 const BOSS_RWEIGHT=[0,0,56,30,12,1.5];           // боссы: ≥Уникальный, Божественный ~1.5%
 let drops=[], showInv=false, forgeTab='craft', forgeSel=null, frostZones=[], groundFX=[];
+let runBag=[], _bagFullT=0, forgeStashScroll=0;   // 🎒 рюкзак забега (лимит BAG_CAP) + скролл стэша кузницы
+const BAG_CAP=8;
+function stashCap(){ return (meta&&meta.stashCap)||40; }   // ёмкость сундука (докупается до 100 в кузнице)
 // Задача 2: зрелищность — экранная тряска и hit-stop
 let shake=0, hitStop=0;
 let dashGhosts=[], dmgFlash=0, onboardT=0;   // афтеримедж рывка · красный флэш урона · таймер подсказок
@@ -796,7 +800,7 @@ MFX.ambient=function(typeId,x,y,r,parts){switch(typeId){
 function forgeSelItem(){ if(!forgeSel||!meta)return null; return forgeSel.loc==='stash'?meta.stash[forgeSel.idx]:meta.equipped[forgeSel.slot]; }
 function forgeMove(){ if(!forgeSel||!meta)return;
   if(forgeSel.loc==='stash'){ const it=meta.stash[forgeSel.idx]; if(!it)return; const old=meta.equipped[it.slot]; meta.equipped[it.slot]=it; meta.stash.splice(forgeSel.idx,1); if(old)meta.stash.push(old); forgeSel=null; saveSave(); }
-  else { const sk=forgeSel.slot, it=meta.equipped[sk]; if(it&&meta.stash.length<24){ meta.stash.push(it); meta.equipped[sk]=null; } forgeSel=null; saveSave(); } }
+  else { const sk=forgeSel.slot, it=meta.equipped[sk]; if(it&&meta.stash.length<stashCap()){ meta.stash.push(it); meta.equipped[sk]=null; } forgeSel=null; saveSave(); } }
 function rollRarityW(w){ let tot=w.reduce((a,b)=>a+b,0),x=Math.random()*tot; for(let i=0;i<w.length;i++){x-=w[i];if(x<=0)return i;} return 0; }
 function rollRarity(luck){   // DEV (тест) — текущие веса с удачей; PROD — редкий Божественный
   if(DEV){ const w=RARITY.map((r,i)=>i===0?r.w:r.w*(1+(luck||0)*2)); return rollRarityW(w); }
@@ -833,10 +837,19 @@ function applyStat(p,stat,v){ switch(stat){
 }}
 function applyItem(p,it,sign){ if(!it)return; const m=1+0.1*(it.sharpen||0); for(const a of it.affixes)applyStat(p,a.stat,a.val*m*sign); }
 function equipItem(p,it){ const cur=p.equipped[it.slot]; if(cur)applyItem(p,cur,-1); applyItem(p,it,1); p.equipped[it.slot]=it; }
-function pickupDrop(p,it){ track('items_picked'); if(it.unique)track('uniques_found'); const cur=p.equipped[it.slot];
-  if(!cur||it.score>cur.score){ equipItem(p,it); lootToast(it,true); if(it.unique&&typeof SFX!=='undefined')SFX.play('levelup'); }
-  else { if(it.unique){ addToStash(it); saveSave(); } lootToast(it,false); } }   // уник «хуже» не теряется — в стэш
-function lootToast(it,equipped){ const uq=!!it.unique; achToasts.push({txt:uq?('⭐ '+it.name):itemName(it),perk:uq?('УНИКАЛЬНЫЙ ПРЕДМЕТ'+(equipped?' · экипирован':' · в сундук')):(equipped?'✓ экипировано':'хуже текущего'),t:uq?4.2:3.0,col:uq?UNIQUE_COL:RARITY[it.rarity].col}); if(achToasts.length>5)achToasts.shift(); }
+// 🎒 Подбор: лучше — экипируем (снятое в рюкзак), хуже — в рюкзак; рюкзак полон → предмет остаётся лежать. Возвращает true, если подобрали.
+function pickupDrop(p,it){ const cur=p.equipped[it.slot];
+  if(!cur||it.score>cur.score){ track('items_picked'); if(it.unique)track('uniques_found');
+    equipItem(p,it); lootToast(it,'equip'); bagFloat(it,'✓'); if(it.unique&&typeof SFX!=='undefined')SFX.play('levelup');
+    if(cur){ if(runBag.length<BAG_CAP)runBag.push(cur); else if(cur.unique){addToStash(cur);saveSave();} else if(typeof drops!=='undefined'&&drops.length<60)drops.push(new Drop(p.x+(Math.random()-.5)*40,p.y+30,cur)); }   // снятое: рюкзак → (уник в сундук) → на землю
+    return true; }
+  if(runBag.length<BAG_CAP){ track('items_picked'); if(it.unique)track('uniques_found'); runBag.push(it); lootToast(it,'bag'); bagFloat(it,'🎒'); return true; }
+  if(it.unique){ track('items_picked'); track('uniques_found'); addToStash(it); saveSave(); lootToast(it,'stash'); return true; }   // уник не теряется даже при полном рюкзаке
+  if(_bagFullT<=0){ _bagFullT=1.5; if(typeof floats!=='undefined')floats.push(new FloatText(p.x,p.y-52,'🎒 Рюкзак полон ('+BAG_CAP+'/'+BAG_CAP+')','#ff8866',12)); }
+  return false; }
+function lootToast(it,mode){ const uq=!!it.unique, eq=mode==='equip';
+  achToasts.push({txt:uq?('⭐ '+it.name):itemName(it),perk:uq?('УНИКАЛЬНЫЙ ПРЕДМЕТ'+(eq?' · экипирован':' · в сундук')):(eq?'✓ экипировано':(mode==='bag'?'🎒 в рюкзак ('+runBag.length+'/'+BAG_CAP+')':'в сундук')),t:uq?4.2:3.0,col:uq?UNIQUE_COL:RARITY[it.rarity].col}); if(achToasts.length>5)achToasts.shift(); }
+function bagFloat(it,pre){ if(typeof floats!=='undefined'&&typeof player!=='undefined'&&player)floats.push(new FloatText(player.x,player.y-40,pre+' '+itemName(it),it.unique?UNIQUE_COL:RARITY[it.rarity].col,12)); }   // 🎒 подбор виден над героем
 // ── Идея 3: золото / стэш / кузница ──
 function addGold(n,x,y){ if(!meta)return;
   if(typeof player!=='undefined'&&player&&player.uGoldTouch>0)n=Math.round(n*(1+player.uGoldTouch));   // ⭐ уник «Око Владыки»
@@ -845,8 +858,8 @@ function addGold(n,x,y){ if(!meta)return;
   if(typeof runStats!=='undefined'&&runStats)runStats.goldEarned=(runStats.goldEarned||0)+n;   // 📊 итоги забега
   if(typeof SFX!=='undefined')SFX.play('gold');
   if(typeof FloatText!=='undefined'&&typeof floats!=='undefined'){ const fx=(x==null&&player)?player.x:x, fy=(y==null&&player)?player.y-44:y; if(fx!=null)floats.push(new FloatText(fx,fy,'+'+n+' 🪙','#ffd24a',13)); } }
-function addToStash(it){ if(!meta)return; if(meta.stash.length>=24){ let li=0; for(let i=1;i<meta.stash.length;i++) if((meta.stash[i].score||0)<(meta.stash[li].score||0)) li=i; if((it.score||0)>(meta.stash[li].score||0)) meta.stash[li]=it; } else meta.stash.push(it); }
-function endRunLoot(){ if(!player||!meta)return; const eq=Object.values(meta.equipped); for(const sk in player.equipped){ const it=player.equipped[sk]; if(it&&!eq.includes(it)&&!meta.stash.includes(it)) addToStash(it); } }
+function addToStash(it){ if(!meta)return; if(meta.stash.length>=stashCap()){ let li=0; for(let i=1;i<meta.stash.length;i++) if((meta.stash[i].score||0)<(meta.stash[li].score||0)) li=i; if((it.score||0)>(meta.stash[li].score||0)) meta.stash[li]=it; } else meta.stash.push(it); }
+function endRunLoot(){ if(!player||!meta)return; const eq=Object.values(meta.equipped); for(const sk in player.equipped){ const it=player.equipped[sk]; if(it&&!eq.includes(it)&&!meta.stash.includes(it)) addToStash(it); } runBag.forEach(addToStash); runBag=[]; }   // 🎒 рюкзак сливается в сундук в конце забега
 function forgeCostReroll(it){ return 20*(it.rarity+1); }
 function forgeCostRarity(it){ return it.rarity>=5?0:60*Math.pow(2,it.rarity); }
 function forgeCostSharpen(it){ return 30*((it.sharpen||0)+1); }
@@ -912,7 +925,7 @@ class Drop{
   constructor(x,y,item){this.x=x;this.y=y;this.item=item;this.life=20;this.pulse=Math.random()*6;this.dead=false; if(typeof tipOnce==='function'&&!(typeof TUT!=='undefined'&&TUT&&!TUT.done))tipOnce('first_drop','💎 Выпал предмет!','Подойди — подберётся сам и наденется, если лучше текущего (I — инвентарь)');}
   update(dt,player){this.life-=dt;this.pulse+=dt*4;if(this.life<=0){this.dead=true;return;}
     const d=dist(this,player), pr=player.r+16+(player.pickupR||0), mag=pr+95;
-    if(d<pr){pickupDrop(player,this.item);this.dead=true;return;}
+    if(d<pr){if(pickupDrop(player,this.item))this.dead=true;return;}   // 🎒 рюкзак полон → предмет остаётся лежать
     if(d<mag){const a=Math.atan2(player.y-this.y,player.x-this.x),sp=Math.min(300,(mag-d)*4.5);this.x+=Math.cos(a)*sp*dt;this.y+=Math.sin(a)*sp*dt;}}   // магнит лута: тянется к герою
   draw(){const it=this.item,rc=itemCol(it),t=Date.now()/1000,s=1+Math.sin(this.pulse)*0.08;ctx.globalAlpha=clamp(this.life*0.5,0,1);
     // луч редкости: шире и ярче прежнего (единственный градиент на дроп)
@@ -2755,9 +2768,10 @@ class Enemy {
       // Идея 2: дроп лута (18.7% на каждый из 4 слотов)
       if(this.t.boss){addShake(12);hitStopFor(0.1);track('kills_boss');   // золото — только за вехи (см. milestoneReached)
         if((typeof gameMode==='undefined'||gameMode!=='testroom')&&typeof drops!=='undefined'&&drops.length<60){const sk=slotKeys()[Math.floor(Math.random()*slotKeys().length)];const ri=rollRarityBoss();const it={slot:sk,rarity:ri,affixes:genAffixes(sk,ri,Math.max(wave,1)),ilvl:Math.max(wave,1),sharpen:0};it.score=itemScore(it);drops.push(new Drop(this.x,this.y,it));}
-        if((typeof gameMode==='undefined'||gameMode!=='testroom')&&typeof rollUniqueDrop==='function'&&typeof drops!=='undefined'&&drops.length<60)rollUniqueDrop(this.typeId,this.x,this.y);}   // идея 5: награда босса + ⭐ уники; 🧪 v3: в testroom выключено (босс-манекен — не ферма)
+        if((typeof gameMode==='undefined'||gameMode!=='testroom')&&typeof rollUniqueDrop==='function'&&typeof drops!=='undefined'&&drops.length<60)rollUniqueDrop(this.typeId,this.x,this.y);
+        if(!DEV&&(typeof gameMode==='undefined'||gameMode!=='testroom')&&typeof player!=='undefined'&&player&&drops.length<58){for(let k=0;k<2;k++){const sk2=slotKeys()[Math.floor(Math.random()*slotKeys().length)];drops.push(new Drop(this.x+(Math.random()-.5)*36,this.y+(Math.random()-.5)*36,rollItem(sk2,Math.max(wave,1),player.luck||0)));}}}   // идея 5: награда босса + ⭐ уники; PROD-пакет: босс-этап = 3 предмета гарантированно
       else if(this.typeId==='cursed'){addShake(10);hitStopFor(0.08);}
-      if(typeof player!=='undefined'&&player&&drops.length<60){for(const sk of slotKeys()){if(Math.random()<devDropChance())drops.push(new Drop(this.x+(Math.random()-.5)*22,this.y+(Math.random()-.5)*22,rollItem(sk,Math.max(wave,1),devLuck(player))));}}
+      if(typeof player!=='undefined'&&player&&drops.length<60&&(DEV||this.t.boss)){for(const sk of slotKeys()){if(Math.random()<devDropChance())drops.push(new Drop(this.x+(Math.random()-.5)*22,this.y+(Math.random()-.5)*22,rollItem(sk,Math.max(wave,1),devLuck(player))));}}   // 🎯 PROD: предметы падают ТОЛЬКО с боссов (решение 2026-07-12); DEV — все мобы (тест)
       // Чумной носитель: облако заразы при смерти
       if(this.t.plague&&typeof groundFX!=='undefined'){groundFX.push({x:this.x,y:this.y,r:90,life:5,max:5,kind:'poison'});rings.push(new Ring(this.x,this.y,'#88cc33',90));}
       // веха «Взрывная кровь»: чафф взрывается при смерти
@@ -3241,7 +3255,7 @@ function updateCam(){
 }
 function initGame(classId){
   worldW=800;worldH=600;camX=0;camY=0;          // F5: по умолчанию арена = экран
-  player=new Player(classId); enemies=[];projs=[];parts=[];orbs=[];rings=[];bladeWaves=[];drops=[];floats=[];frostZones=[];groundFX=[];showInv=false;
+  player=new Player(classId); enemies=[];projs=[];parts=[];orbs=[];rings=[];bladeWaves=[];drops=[];floats=[];frostZones=[];groundFX=[];showInv=false; runBag=[]; _bagFullT=0;   // 🎒 рюкзак на забег
   dashGhosts=[];dmgFlash=0;onboardT=7;arcTrans={t:0,max:2.8,lvl:1,name:'',sub:''};castFX=[];skyFlashT=0;delayedFX=[];   // сброс афтеримеджа/флэша/перехода/рун/отложенных + 7с подсказок
   hazards=[];minions=[];   // архетипы: сброс зон/призывов между забегами
   evPortal=null;evActive=null;evChoice=[];evAltarPair=null;   // фича 5: сброс арен-событий
@@ -3422,7 +3436,8 @@ canvas.addEventListener('click', () => {
     if(mouse.y>=48&&mouse.y<=76){ if(mouse.x>=112&&mouse.x<=222)forgeTab='craft'; else if(mouse.x>=228&&mouse.x<=394)forgeTab='unlock'; else if(mouse.x>=400&&mouse.x<=520)forgeTab='avatars'; else if(mouse.x>=526&&mouse.x<=674)forgeTab='archicons'; }   // вкладки: Кузница/Разблок./Аватары/Эмблемы
     if(mouse.x>=20&&mouse.x<=140&&mouse.y>=560&&mouse.y<=594){state='menu';forgeSel=null;}
     if(forgeTab==='craft'){
-      for(let i=0;i<24;i++){const c=i%6,r=Math.floor(i/6),cx=28+c*62,cy=96+r*62; if(mouse.x>=cx&&mouse.x<=cx+56&&mouse.y>=cy&&mouse.y<=cy+56) forgeSel=meta.stash[i]?{loc:'stash',idx:i}:null;}
+      for(let v=0;v<24;v++){const c=v%6,r=Math.floor(v/6),i=(forgeStashScroll+r)*6+c,cx=28+c*62,cy=96+r*62; if(i<stashCap()&&mouse.x>=cx&&mouse.x<=cx+56&&mouse.y>=cy&&mouse.y<=cy+56) forgeSel=meta.stash[i]?{loc:'stash',idx:i}:null;}   // 🎒 клик с учётом скролла
+      if(stashCap()<100&&mouse.x>=28&&mouse.x<=260&&mouse.y>=352&&mouse.y<=378){ const bc=200+150*Math.floor((stashCap()-40)/10); if((meta.gold||0)>=bc){ meta.gold-=bc; meta.stashCap=stashCap()+10; saveSave(); if(typeof SFX!=='undefined')SFX.play('gold'); } }   // 🎒 докупка +10 слотов (до 100)
       slotKeys().forEach((sk,idx)=>{const ex=410,ey=96+idx*60; if(mouse.x>=ex&&mouse.x<=ex+56&&mouse.y>=ey&&mouse.y<=ey+52&&meta.equipped[sk])forgeSel={loc:'equip',slot:sk};});
       const it=forgeSelItem();
       if(it){
@@ -3483,6 +3498,7 @@ canvas.addEventListener('wheel', e => {
   if(state==='play'&&gameMode==='testroom'){ trScroll=clamp(trScroll+e.deltaY*0.6,0,trScrollMax()); e.preventDefault(); }   // 🧪 v3: скролл панели апгрейдов
   if(state==='achievements'){ achScroll=clamp(achScroll+e.deltaY, 0, Math.max(0, ACHIEVEMENTS.length*60-440)); e.preventDefault(); }
   if(state==='bestiary'){ bestScroll=clamp(bestScroll+e.deltaY, 0, Math.max(0, Object.keys(ET).length*56-460)); e.preventDefault(); }
+  if(state==='forge'&&forgeTab==='craft'){ if(mouse.x>=28&&mouse.x<=400&&mouse.y>=90&&mouse.y<=344){ forgeStashScroll=clamp(forgeStashScroll+(e.deltaY>0?1:-1),0,Math.max(0,Math.ceil(stashCap()/6)-4)); e.preventDefault(); } }   // 🎒 скролл стэша (по рядам; мышь уже в 800×600)
 }, {passive:false});
 
 canvas.addEventListener('contextmenu', e => {
@@ -4311,7 +4327,8 @@ function drawHUD(){
     ctx.strokeStyle=it?itemCol(it):'#333';ctx.lineWidth=(it&&(it.rarity>=3||it.unique))?2:1;ctx.strokeRect(ex,ey,26,26);
     if(it)drawItemIcon(ctx,ex+13,ey+13,21,it,_hT);   // детальная иконка вместо эмодзи
     else{ctx.globalAlpha=0.32;drawItemIcon(ctx,ex+13,ey+13,20,{slot:sk,rarity:0},0);ctx.globalAlpha=1;}}   // призрак пустого слота
-  ctx.fillStyle='#777';ctx.font='9px Segoe UI';ctx.textAlign='left';ctx.fillText('I — инвентарь',4,72+4*30+6);
+  ctx.fillStyle=runBag.length>=BAG_CAP?'#ff8866':'#b8b0d0';ctx.font='bold 10px Segoe UI';ctx.textAlign='left';ctx.fillText('🎒 '+runBag.length+'/'+BAG_CAP,5,72+4*30+8);   // 🎒 рюкзак забега
+  ctx.fillStyle='#777';ctx.font='9px Segoe UI';ctx.fillText('I — инвентарь',4,72+4*30+20);
   // полоса ХП босса сверху — только для Голем-Владыки (мега-босс)
   const _boss=enemies.find(e=>e.typeId==='golemlord'&&!e.dead);
   if(_boss){const bw=440,bx=VW/2-bw/2,by=38;ctx.fillStyle='rgba(0,0,0,0.62)';ctx.fillRect(bx-3,by-3,bw+6,20);ctx.fillStyle='#3a0a0a';ctx.fillRect(bx,by,bw,14);ctx.fillStyle='#ff3322';ctx.fillRect(bx,by,bw*clamp(_boss.hp/_boss.maxHp,0,1),14);if(_boss.eShield>0){ctx.fillStyle='#88ccff';ctx.fillRect(bx,by,bw*clamp(_boss.eShield/_boss.maxHp,0,1),5);}ctx.strokeStyle='#ff7766';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,14);ctx.fillStyle='#fff';ctx.font='bold 12px Segoe UI';ctx.textAlign='center';ctx.fillText((E_MARK[_boss.typeId]||'☠')+' '+_boss.t.name+' — фаза '+_boss.phase+(_boss.eShield>0?' · ЩИТ':''),VW/2,by+11);ctx.textAlign='left';}
@@ -4421,6 +4438,7 @@ function drawInventory(){
   ctx.fillStyle='#ffcc44';ctx.font='bold 22px Segoe UI';ctx.textAlign='center';ctx.fillText('🎒 ЭКИПИРОВКА',400,26);
   const _iT=Date.now()/1000;   // анимация иконок
   ctx.fillStyle='#8899bb';ctx.font='11px Segoe UI';ctx.fillText('I — закрыть (пауза) · лучший предмет надевается автоматически · выше редкость = больше аффиксов и сильнее значения',400,44);
+  ctx.fillStyle=runBag.length>=BAG_CAP?'#ff8866':'#9fe6a0';ctx.font='bold 11px Segoe UI';ctx.textAlign='right';ctx.fillText('🎒 Рюкзак: '+runBag.length+'/'+BAG_CAP+' (в сундук после забега)',780,62);ctx.textAlign='center';
   ctx.textAlign='left'; let lx=70; ctx.font='10px Segoe UI';
   RARITY.forEach(r=>{ctx.fillStyle=r.col;ctx.fillText('■',lx,62);ctx.fillStyle='#b6b6c8';const t=' '+r.n+' ('+r.affixes+')';ctx.fillText(t,lx+8,62);lx+=18+t.length*5.7;});
   const ks=slotKeys(), rows=Math.ceil(ks.length/2), gY=10, top=74, ph=Math.floor((524-(rows-1)*gY)/rows), maxAff=Math.max(2,Math.floor((ph-106)/15));
@@ -4454,10 +4472,16 @@ function drawForge(){
   if(forgeTab==='avatars'){ drawAvatarsTab(); btn(20,560,120,34,'← Меню','#262244','#4455aa'); return; }
   if(forgeTab==='archicons'){ drawArchIconsTab(); btn(20,560,120,34,'← Меню','#262244','#4455aa'); return; }
   if(forgeTab==='craft'){
-    ctx.fillStyle='#99a';ctx.font='11px Segoe UI';ctx.fillText('Сундук (стэш '+meta.stash.length+'/24)',28,90);
-    for(let i=0;i<24;i++){const c=i%6,r=Math.floor(i/6),cx=28+c*62,cy=96+r*62,it=meta.stash[i],sd=forgeSel&&forgeSel.loc==='stash'&&forgeSel.idx===i;
+    // 🎒 стэш до 100 слотов: 4 видимых ряда + скролл колесом + докупка +10
+    const _cap=stashCap(), _maxRow=Math.max(0,Math.ceil(_cap/6)-4); forgeStashScroll=clamp(forgeStashScroll,0,_maxRow);
+    ctx.fillStyle='#99a';ctx.font='11px Segoe UI';ctx.fillText('Сундук ('+meta.stash.length+'/'+_cap+')'+(_maxRow>0?' · ⇅ колесо':''),28,90);
+    for(let v=0;v<24;v++){const c=v%6,r=Math.floor(v/6),i=(forgeStashScroll+r)*6+c; if(i>=_cap)continue;
+      const cx=28+c*62,cy=96+r*62,it=meta.stash[i],sd=forgeSel&&forgeSel.loc==='stash'&&forgeSel.idx===i;
       ctx.fillStyle='#16141f';ctx.fillRect(cx,cy,56,56);ctx.strokeStyle=sd?'#ffcc44':(it?itemCol(it):'#2c2c40');ctx.lineWidth=sd?2.5:1.2;ctx.strokeRect(cx,cy,56,56);
       if(it){drawItemIcon(ctx,cx+28,cy+25,38,it,_fT);ctx.fillStyle='#cbd0e0';ctx.font='8px Segoe UI';ctx.textAlign='center';ctx.fillText((it.unique?'⭐':'ур.'+it.ilvl)+(it.sharpen?'+'+it.sharpen:''),cx+28,cy+52);ctx.textAlign='left';}}
+    const _bCost=200+150*Math.floor((_cap-40)/10);
+    if(_cap<100)fbtn(28,352,232,26,'+10 слотов сундука — '+_bCost+'🪙',(meta.gold||0)>=_bCost);
+    else{ctx.fillStyle='#66aa66';ctx.font='bold 11px Segoe UI';ctx.fillText('✓ Сундук максимальный (100)',28,368);}
     ctx.fillStyle='#99a';ctx.font='11px Segoe UI';ctx.fillText('Надето',410,90);
     slotKeys().forEach((sk,idx)=>{const ex=410,ey=96+idx*60,it=meta.equipped[sk],sd=forgeSel&&forgeSel.loc==='equip'&&forgeSel.slot===sk;
       ctx.fillStyle='#16141f';ctx.fillRect(ex,ey,56,52);ctx.strokeStyle=sd?'#ffcc44':(it?itemCol(it):'#2c2c40');ctx.lineWidth=sd?2.5:1.2;ctx.strokeRect(ex,ey,56,52);
@@ -5092,6 +5116,7 @@ function gameUpdate(dt){
   if(delayedFX.length){ delayedFX.forEach(d=>d.t-=dt); const _due=delayedFX.filter(d=>d.t<=0); delayedFX=delayedFX.filter(d=>d.t>0); _due.forEach(d=>{try{d.fn();}catch(_e){}}); }   // отложенные эффекты умений
   if(player&&player.au&&player.au._riseT>0)player.au._riseT-=dt;   // au_su7: таймер окна вознесения
   if(player)player._snCasc=0;   // au_sn20: сброс счётчика каскада крит-стрел каждый кадр
+  if(_bagFullT>0)_bagFullT-=dt;   // 🎒 гейт тоста «рюкзак полон»
   if(player&&player.au&&player.au._huPackT>0)player.au._huPackT-=dt;   // au_hu18: таймер окна вечной стаи
   minions.forEach(m=>m.update(dt));   // архетипы: призывы (Волшебник-Призыватель, Лучник-Ловчий)
   if(hazards.length){ hazards.forEach(hz=>{ hz.life-=dt; if(hz.arm>0)hz.arm-=dt;
