@@ -1358,7 +1358,7 @@ const ARCHETYPES = { swordsman:{
     x:(p,projs,parts)=>{ const a=p.angle,dist2=400; const nx=clamp(p.x+Math.cos(a)*dist2,p.r+20,worldW-20-p.r),ny=clamp(p.y+Math.sin(a)*dist2,p.r+20,worldH-20-p.r); const steps=10; for(let s=0;s<=steps;s++){ const f=s/steps,cx=p.x+(nx-p.x)*f,cy=p.y+(ny-p.y)*f; spawnHazard(cx,cy,50*p.archAoeM,2.2,{dps:p._dmg(p.c.dmg*0.3),color:'#ff6622'}); dashGhosts.push({x:cx,y:cy,angle:a,cls:p.classId,life:0.3,max:0.3}); } archAoe(p,parts,p.x,p.y,200*p.archAoeM,p._dmg(p.c.dmg*3.2),'x',{color:'#ff5522',stun:1.0}); p.x=nx;p.y=ny;p.invTimer=Math.max(p.invTimer,0.3); archAoe(p,parts,p.x,p.y,200*p.archAoeM,p._dmg(p.c.dmg*2.2),'x',{color:'#ff5522',stun:1.0}); skyFlashT=Math.max(skyFlashT,0.15); addShake(7); },   // баланс: второй взрыв 3.2→2.2 (танк не лидирует по урону)
   },
 }, wizard:{
-  elements:{ name:'Стихии', color:'#ff8833', icon:'🔥', lmbName:'Ледяное копьё',
+  elements:{ name:'Стихии', color:'#ff8833', icon:'🔥', lmbName:'Ледяное копьё', dmgMul:1.25,
     qName:'Огненный шар', eName:'Ледяные пики', rName:'Стихийная буря', xName:'Армагеддон',
     qCd:8, eCd:10, rCd:11, xCd:32,
     weapon:'staff_fire', wcol:'#ffb055', passiveName:'☄Небо', passiveDesc:'Огненный шар с неба по врагу',
@@ -1388,13 +1388,17 @@ const ARCHETYPES = { swordsman:{
     lmb:(p,projs,parts,combo)=>{ const dmg=p._dmg(p.c.dmg*1.45); const pr=new Proj(p.x,p.y,p.angle,440,dmg,'#66ddff',9,false,2+p.pierce); pr.src='atk'; projs.push(pr); enemies.forEach(e=>{ if(!e.dead){ const dx=e.x-p.x,dy=e.y-p.y; if(Math.hypot(dx,dy)<130&&Math.abs(normA(Math.atan2(dy,dx)-p.angle))<0.4)e.slow=Math.max(e.slow,0.6); } }); for(let i=0;i<5;i++)parts.push(new Particle(p.x,p.y,Math.cos(p.angle)*220+(Math.random()-.5)*80,Math.sin(p.angle)*220+(Math.random()-.5)*80,'#aaeeff',0.3,3)); },
     q:(p,projs,parts)=>{ const a=Math.atan2((mouse.y+camY)-p.y,(mouse.x+camX)-p.x); const dmg=p._dmg(p.c.dmg*2); const dist2=Math.min(500,Math.hypot((mouse.x+camX)-p.x,(mouse.y+camY)-p.y)); const mp=new Proj(p.x,p.y,a,340,dmg,'#ff5500',18,false,0,true,90*p.archAoeM); mp.maxDist=dist2; mp.src='q'; mp.fireTrail=true; projs.push(mp); spawnHazard(p.x+Math.cos(a)*dist2,p.y+Math.sin(a)*dist2,60*p.archAoeM,3,{dps:p._dmg(p.c.dmg*0.15),color:'#ff6622'}); },
     e:(p,projs,parts)=>{ for(let i=0;i<6;i++){ const a=p.angle+(i-2.5)*0.16; const pr=new Proj(p.x,p.y,a,520,p._dmg(p.c.dmg*1.5),'#66ddff',9,false,0,true,70*p.archAoeM); pr.maxDist=430; pr.src='e'; pr.slowDur=1.8; projs.push(pr); parts.push(new Particle(p.x+Math.cos(a)*26,p.y+Math.sin(a)*26,Math.cos(a)*180,Math.sin(a)*180,'#aaeeff',0.3,3,{kind:'shard',rot:a,vr:8})); } rings.push(new Ring(p.x,p.y,'#66ddff',60)); },   // дистанционный веер взрывающихся сосулек (вместо самокаста)
-    r:(p,projs,parts)=>{ const range=430,dmg=p._dmg(p.c.dmg*2.1); enemies.forEach(e=>{ if(e.dead)return; const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy); if(d<range&&Math.abs(normA(Math.atan2(dy,dx)-p.angle))<0.14){ e.hit(dmg,parts,'r','roll'); score+=Math.floor(dmg); e.slow=Math.max(e.slow,1.8); if(p.lifesteal>0)p.heal(Math.floor(dmg*p.lifesteal)); } });
-      for(let i=0;i<34;i++){ const f=i/34, bx=p.x+Math.cos(p.angle)*range*f, by=p.y+Math.sin(p.angle)*range*f;   // 🌈 трёхслойный луч: белое ядро + огонь/лёд оболочка
-        parts.push(new Particle(bx,by,(Math.random()-.5)*24,(Math.random()-.5)*24,'#ffffff',0.22,2.5,{glow:true}));
-        parts.push(new Particle(bx+(Math.random()-.5)*14,by+(Math.random()-.5)*14,(Math.random()-.5)*70,(Math.random()-.5)*70,i%2===0?'#ff8844':'#66ddff',0.4,3.5,{glow:true})); }
-      const ex2=clamp(p.x+Math.cos(p.angle)*range,30,worldW-30), ey2=clamp(p.y+Math.sin(p.angle)*range,30,worldH-30);
-      rings.push(new Ring(ex2,ey2,'#ffcc66',70)); rings.push(new Ring(p.x,p.y,'#88ddff',40)); parts.push(new Particle(ex2,ey2,0,0,'#ff8844',0.3,44,{kind:'pillar'}));
-      fireTornado(ex2,ey2,1.1); skyFlashT=Math.max(skyFlashT,0.12); addShake(4); },   // 🌩 R-луч: мощнее (×2.1, 430px, шире) + ураган огня на конце
+    r:(p,projs,parts)=>{ const a=p.angle, range=400, dmg=p._dmg(p.c.dmg*2.2);   // 🌊 v2: ВОЛНА огня и холода вперёд — широкий конус ±0.6 рад (вместо луча ±0.14) + 9 взрывов + ураган в центре
+      archCone(p,parts,range,0.6,dmg,'r',{color:'#ff8844',stun:0.3});
+      for(let row=0;row<3;row++){ const d0=110+row*105, sp=0.24+row*0.09;   // волна взрывов: 3 ряда вперёд, ряд шире с дистанцией, чередование огонь/лёд (лёд замедляет)
+        after(0.06+row*0.09,()=>{ for(let j=-1;j<=1;j++){ const ang=a+j*sp, ex=clamp(p.x+Math.cos(ang)*d0,30,worldW-30), ey=clamp(p.y+Math.sin(ang)*d0,30,worldH-30), ice=(row+j+3)%2===1;
+          explodeAt(ex,ey,p._dmg(p.c.dmg*0.6),parts,72*p.archAoeM,ice?1.6:0,'r');
+          parts.push(new Particle(ex,ey,0,0,ice?'#88eeff':'#ff8844',0.26,30,{kind:'pillar'})); } }); }
+      for(let i=0;i<3;i++){ const fd=120+i*105; after(0.05+i*0.09,()=>{ for(let k=0;k<10;k++){ const ang=a+(k/9-0.5)*1.2;   // бегущий фронт волны (полудуга частиц катится вперёд)
+        parts.push(new Particle(p.x+Math.cos(ang)*fd,p.y+Math.sin(ang)*fd,Math.cos(ang)*170,Math.sin(ang)*170,(i+k)%2?'#66ddff':'#ff8844',0.3,3,{glow:true})); } }); }
+      const cx2=clamp(p.x+Math.cos(a)*210,30,worldW-30), cy2=clamp(p.y+Math.sin(a)*210,30,worldH-30);
+      fireTornado(cx2,cy2,1.4);   // 🔥 ураган в центре волны
+      rings.push(new Ring(p.x,p.y,'#88ddff',50)); skyFlashT=Math.max(skyFlashT,0.14); addShake(5); },   // 🌊 волна: конус ×2.2 + 9×0.6 огонь/лёд — ШИРЕ и мощнее старого луча
     x:(p,projs,parts)=>{ const cnt=7; for(let i=0;i<cnt;i++){ const a=p.angle+(Math.random()-0.5)*1.4; const md=60+Math.random()*380; const col=i%2===0?'#ff4400':'#66ddff'; const mp=new Proj(p.x,p.y,a,300,p._dmg(p.c.dmg*2.8),col,18,false,0,true,80*p.archAoeM); mp.maxDist=md; mp.src='x'; mp.fireTrail=(i%2===0); projs.push(mp); } for(let i=0;i<24;i++){const a=p.angle+(Math.random()-.5)*1.2;parts.push(new Particle(p.x,p.y,Math.cos(a)*220,Math.sin(a)*220,i%2===0?'#ff6600':'#88eeff',0.6,4));} },   // баланс: 2.0→2.8
   },
   arcane:{ name:'Аркан', color:'#aa44ff', icon:'🌀', lmbName:'Арканный залп',
@@ -1425,7 +1429,7 @@ const ARCHETYPES = { swordsman:{
       {id:'au_ar20',icon:'🌑✳',tier:3,name:'Разлом: Цветение',desc:'Пассив: разлом через 1.2с распускается взрывом и метит врагов',apply:p=>{p.au.arBloom=true;}},
       {id:'au_ar21',icon:'🕳💀',tier:3,name:'Разлом: Энтропия',desc:'Пассив: цель помечена; при её смерти прорастает разлом-взрыв',apply:p=>{p.au.arEntropy=true;}},
     ],
-    lmb:(p,projs,parts,combo)=>{ const cnt=3+(p.level>=25?2:0), dmg=p._dmg(p.c.dmg*0.7); for(let i=0;i<cnt;i++){ const a=p.angle+(i-(cnt-1)/2)*0.13; const pr=new Proj(p.x,p.y,a,380,dmg,'#aa44ff',8,false,p.pierce,true,48*p.archAoeM); pr.src='atk'; pr.homing=true; pr.maxDist=560; projs.push(pr); parts.push(new Particle(p.x+Math.cos(a)*20,p.y+Math.sin(a)*20,Math.cos(a)*190,Math.sin(a)*190,i%2?'#2a0a3a':'#cc88ff',0.3,i%2?5:3,{glow:i%2===0})); } },   // 🌑 веер тёмных сфер: 3 (5 с 25 ур.), детонация по дистанции
+    lmb:(p,projs,parts,combo)=>{ const cnt=3+(p.level>=25?2:0), dmg=p._dmg(p.c.dmg*0.7); for(let i=0;i<cnt;i++){ const k=i-(cnt-1)/2, a=p.angle+k*0.42; const pr=new Proj(p.x,p.y,a,340+Math.abs(k)*28,dmg,'#aa44ff',8,false,p.pierce,true,48*p.archAoeM); pr.src='atk'; pr.homing=true; pr.homingDelay=0.20+Math.abs(k)*0.05; pr.maxDist=620; pr.voidOrb=true; projs.push(pr); parts.push(new Particle(p.x+Math.cos(a)*20,p.y+Math.sin(a)*20,Math.cos(a)*190,Math.sin(a)*190,i%2?'#2a0a3a':'#cc88ff',0.3,i%2?5:3,{glow:i%2===0})); } },   // 🌑 v2: веер тёмных сфер 3 (5 с 25 ур.) — РАЗЛЁТ в стороны ±0.42 рад → самонаведение после homingDelay; рендер voidOrb (чернильное ядро+обод+искры); детонация по дистанции
     q:(p,projs,parts)=>{ const tx=clamp(mouse.x+camX,p.r+20,worldW-20-p.r),ty=clamp(mouse.y+camY,p.r+20,worldH-20-p.r); archAoe(p,parts,p.x,p.y,90*p.archAoeM,p._dmg(p.c.dmg*1.2),'q',{color:'#aa44ff',stun:0.6}); for(let i=0;i<7;i++){const f=i/7;dashGhosts.push({x:p.x+(tx-p.x)*f,y:p.y+(ty-p.y)*f,angle:p.angle,cls:p.classId,life:0.28,max:0.28});} p.x=tx;p.y=ty;p.invTimer=Math.max(p.invTimer,0.3); archAoe(p,parts,p.x,p.y,90*p.archAoeM,p._dmg(p.c.dmg*1.2),'q',{color:'#aa44ff',stun:0.6}); },
     e:(p,projs,parts)=>{ const r=130*p.archAoeM,zx=p.x+Math.cos(p.angle)*90,zy=p.y+Math.sin(p.angle)*90; spawnHazard(zx,zy,r,0.9,{pull:180,color:'#aa44ff'}); archAoe(p,parts,zx,zy,r,p._dmg(p.c.dmg*2),'e',{color:'#8822cc',stun:0.5}); },
     r:(p,projs,parts)=>{ const tx=clamp(mouse.x+camX,40,worldW-40),ty=clamp(mouse.y+camY,40,worldH-40); const r=150*p.archAoeM; spawnHazard(tx,ty,r,3.2,{pull:260,dps:p._dmg(p.c.dmg*0.6),color:'#6622aa',chase:(p.au&&p.au.arRoam)?1:0}); rings.push(new Ring(tx,ty,'#6622aa',r)); },
@@ -1975,7 +1979,7 @@ class Proj {
     this.isEnemy=isEnemy; this.dead=false; this.pierce=pierce; this.explode=explode; this.explodeR=explodeR; this.doubleExplode=doubleExplode;
     this.hit=new Set(); this.trail=[];
     this.sticky=false; this.stuck=false; this.stuckTimer=0; this.stuckAngle=0;
-    this.fireTrail=false; this.bouncy=false; this.bounceCount=0; this.homing=false;
+    this.fireTrail=false; this.bouncy=false; this.bounceCount=0; this.homing=false; this.homingDelay=0; this.voidOrb=false;   // homingDelay: веерный разлёт до самонаведения; voidOrb: тёмная детализированная сфера (Аркан)
     this.maxDist=0; this.traveled=0;   // F4: детонация по пройденной дистанции (метеоры волшебника)
     this.slowDur=0;                    // замедление при взрыве (апгрейд Метеора)
     this.slowHit=0; this.stunHit=0; this.rico=0;   // редизайн деревьев: замедление/стан при хите, рикошет во врага
@@ -1987,8 +1991,9 @@ class Proj {
     if(this.stuck){this.stuckTimer-=dt;if(this.stuckTimer<=0)this.dead=true;return;}
     this.trail.push({x:this.x,y:this.y}); if(this.trail.length>9) this.trail.shift();
     this.x+=this.vx*dt; this.y+=this.vy*dt;
-    // Лучник: самонаведение — мягко доворачиваем к ближайшему врагу
-    if(this.homing&&!this.isEnemy&&typeof enemies!=='undefined'&&enemies.length){
+    // Самонаведение — мягко доворачиваем к ближайшему врагу; homingDelay = сначала веерный разлёт, потом наведение
+    if(this.homingDelay>0)this.homingDelay-=dt;
+    else if(this.homing&&!this.isEnemy&&typeof enemies!=='undefined'&&enemies.length){
       let best=null,bd=1e9; for(const e of enemies){if(e.dead)continue;const dd=(e.x-this.x)*(e.x-this.x)+(e.y-this.y)*(e.y-this.y);if(dd<bd){bd=dd;best=e;}}
       if(best&&bd<360*360){const sp=Math.hypot(this.vx,this.vy),ca=Math.atan2(this.vy,this.vx);let da=Math.atan2(best.y-this.y,best.x-this.x)-ca;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;const na=ca+clamp(da,-0.13,0.13);this.vx=Math.cos(na)*sp;this.vy=Math.sin(na)*sp;}
     }
@@ -2042,6 +2047,19 @@ class Proj {
       ctx.strokeStyle='rgba(180,255,140,0.7)';ctx.lineWidth=1.5;
       ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx+Math.cos(sa+0.5)*5,ty+Math.sin(sa+0.5)*5);ctx.moveTo(tx,ty);ctx.lineTo(tx+Math.cos(sa-0.5)*5,ty+Math.sin(sa-0.5)*5);ctx.stroke();
       ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.lineCap='butt';return;
+    }
+    if(this.voidOrb){   // 🌑 v2: тёмная сфера Аркана — дымный шлейф, чернильное ядро с фиолетовым ободом, орбитальные искры
+      for(let i=0;i<this.trail.length;i++){const f=i/this.trail.length;ctx.globalAlpha=f*0.30;ctx.fillStyle=i%2?'#1a0630':'#3a1050';ctx.beginPath();ctx.arc(this.trail[i].x,this.trail[i].y,this.size*(0.5+f*0.75),0,Math.PI*2);ctx.fill();}
+      const t=Date.now()/1000, sd=(this.x*0.11+this.y*0.07)%6.28;
+      ctx.globalAlpha=0.9; const g=ctx.createRadialGradient(this.x-this.size*0.25,this.y-this.size*0.3,this.size*0.1,this.x,this.y,this.size*1.15);
+      g.addColorStop(0,'#3a1a55'); g.addColorStop(0.45,'#16062a'); g.addColorStop(0.8,'#0a0316'); g.addColorStop(1,'rgba(170,68,255,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(this.x,this.y,this.size*1.15,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=0.85; ctx.strokeStyle='#aa44ff'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.stroke();   // фиолетовый обод
+      ctx.globalAlpha=0.55; ctx.strokeStyle='#e0c0ff'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.arc(this.x,this.y,this.size*0.55,t*3+sd,t*3+sd+4.2); ctx.stroke();   // внутренняя вращающаяся дуга
+      ctx.fillStyle='#ffffff'; ctx.globalAlpha=0.8; ctx.beginPath(); ctx.arc(this.x-this.size*0.28,this.y-this.size*0.32,this.size*0.16,0,Math.PI*2); ctx.fill();   // блик
+      for(let k=0;k<2;k++){ const oa=t*6*(k?1:-1)+sd+k*Math.PI, orr=this.size*1.35; ctx.globalAlpha=0.75; ctx.fillStyle=k?'#cc88ff':'#8a2be2';   // 2 орбитальные искры в противофазе
+        ctx.beginPath(); ctx.arc(this.x+Math.cos(oa)*orr,this.y+Math.sin(oa)*orr*0.6,1.5,0,Math.PI*2); ctx.fill(); }
+      ctx.globalAlpha=1; return;
     }
     if(this.fireTrail){
       const ftc=['#ff2200','#ff6600','#ffbb00'];
@@ -5037,8 +5055,8 @@ const ARCH_INFO={
   berserk:{lmb:{d:'Топорный рубящий конус (тяжёлый)',m:1.3},q:{d:'AoE вокруг (r150) + 6 волн по кругу',m:3.4},e:{d:'Конус-трещина 92° (260px) + лава-зона с DoT',m:3.0},r:{d:'Вихрь вокруг (r170), вампиризм ×2 (КД 8с)',m:2.8},x:{d:'Прыжок к курсору + AoE r210 + стан 1.2с + вспышка неба',m:5.5},pas:{d:'Кровавый взрыв r110, вампиризм ×2',m:0.9}},
   duelist:{lmb:{d:'Длинный выпад рапирой, конус 135px',m:1.25},q:{d:'Рывок к курсору: AoE на входе и на выходе',m:1.8},e:{d:'6 клинков-волн во все стороны',m:1.2},r:{d:'Неуязвимость 0.5с + контр-взрыв r150',m:2.5},x:{d:'Телепорт-удары по 8 ближайшим, крест-росчерки',m:2.2},pas:{d:'2 фантомных клинка в ближайшего',m:0.9}},
   guardian:{lmb:{d:'Удар булавой, конус перед собой',m:1.25},q:{d:'Таран 190px: стан 0.8с + отброс',m:2.2},e:{d:'Втягивание врагов + контр-взрыв + неуязв. 0.8с',m:1.9},r:{d:'Конус r150: отброс + стан 0.7с',m:2.1},x:{d:'Рывок через арену с лавовым следом + AoE 3.2+2.2 r200 + стан',m:3.2},pas:{d:'Волна r120: отброс + стан 0.3с',m:0.95}},
-  elements:{lmb:{d:'Ледяное копьё: пробитие + замедление в конусе',m:1.45},q:{d:'Метеор в точку курсора + горящая зона',m:2},e:{d:'Веер из 6 взрывающихся сосулек (r70, замедление)',m:1.5},r:{d:'Луч по линии прицела (380px) + замедление',m:1.5},x:{d:'7 метеоров огня и льда веером',m:2.8},pas:{d:'Огненный шар с неба по ближайшему (r85)',m:1.5}},
-  arcane:{lmb:{d:'Веер тёмных сфер: 3 (5 с 25 ур.), самонаводки',m:0.7},q:{d:'Телепорт к курсору + стан-вспышки на входе/выходе',m:1.2},e:{d:'Печать: втягивание + детонация r130',m:2},r:{d:'Чёрная дыра у курсора: втягивание + DoT 3.2с',m:0.6},x:{d:'Воронка r220 + мощный взрыв + стан 1с',m:5.5},pas:{d:'Мини-разлом у цели: втягивание + DoT',m:0.4}},
+  elements:{lmb:{d:'Ледяное копьё: пробитие + замедление в конусе',m:1.45},q:{d:'Метеор в точку курсора + горящая зона',m:2},e:{d:'Веер из 6 взрывающихся сосулек (r70, замедление)',m:1.5},r:{d:'ВОЛНА огня и льда вперёд (конус ±34°, 400px): 9 взрывов + ураган в центре',m:2.2},x:{d:'7 метеоров огня и льда веером',m:2.8},pas:{d:'Огненный шар с неба по ближайшему (r85)',m:1.5}},
+  arcane:{lmb:{d:'Веер тёмных сфер: 3 (5 с 25 ур.) — разлёт в стороны → самонаведение',m:0.7},q:{d:'Телепорт к курсору + стан-вспышки на входе/выходе',m:1.2},e:{d:'Печать: втягивание + детонация r130',m:2},r:{d:'Чёрная дыра у курсора: втягивание + DoT 3.2с',m:0.6},x:{d:'Воронка r220 + мощный взрыв + стан 1с',m:5.5},pas:{d:'Мини-разлом у цели: втягивание + DoT',m:0.4}},
   summoner:{lmb:{d:'Огненный болт',m:1.15},q:{d:'5 духов-стрелков на 9с',m:0.42},e:{d:'Дух-фамильяр на 16с',m:0.8},r:{d:'Голем-танк на 14с (ближний бой)',m:1.5},x:{d:'8 духов вокруг на 12с',m:0.85},pas:{d:'Призыв духа на 5с (кап 10 призывов)',m:0.35}},
   sniper:{lmb:{d:'3 стрелы веером',m:1},q:{d:'Сверхбыстрая стрела, пробитие 8',m:3},e:{d:'3 самонаводящиеся гарант-крит стрелы',m:2},r:{d:'5 стрел веером с рикошетом от стен',m:2},x:{d:'Удар с неба r150 + 12 стрел во все стороны',m:3},pas:{d:'Крит-выстрел в ближайшего (крит ×2.5 учтён)',m:4}},
   hunter:{lmb:{d:'Точный одиночный выстрел',m:1.2},q:{d:'Ядовитая зона у курсора (5с, зона бьёт честно)',m:0.8},e:{d:'Капкан ПЕРЕД героем (120px): стан 1.6с',m:0.9},r:{d:'Волк-спутник на 15с (КД 8с)',m:1.7},x:{d:'2 волка + лиса (18с) + 3 ядовитые зоны',m:1.5},pas:{d:'Яд на цель + ядовитая лужа',m:0.6}},
