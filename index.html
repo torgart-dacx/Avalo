@@ -1927,7 +1927,30 @@ class Particle {
     if(k==='ring'){ctx.strokeStyle=this.color;ctx.lineWidth=this.lw||3;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.stroke();}
     else if(k==='spark'){ctx.strokeStyle=this.color;ctx.lineWidth=this.size;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(this.x,this.y);ctx.lineTo(this.x-this.vx*0.04,this.y-this.vy*0.04);ctx.stroke();ctx.lineCap='butt';}
     else if(k==='shard'){ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rot||0);ctx.fillStyle=this.color;ctx.beginPath();ctx.moveTo(-this.size,this.size*0.9);ctx.lineTo(this.size,this.size*0.3);ctx.lineTo(0,-this.size);ctx.closePath();ctx.fill();ctx.restore();}
-    else if(k==='pillar'){ctx.save();ctx.globalCompositeOperation='lighter';const h=170,w=this.size;const g=ctx.createLinearGradient(this.x,this.y-h,this.x,this.y);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(1,this.color);ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(this.x-w*0.5,this.y);ctx.lineTo(this.x-w*0.15,this.y-h);ctx.lineTo(this.x+w*0.15,this.y-h);ctx.lineTo(this.x+w*0.5,this.y);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(255,255,255,0.75)';ctx.fillRect(this.x-3,this.y-h,6,h);ctx.restore();}   // столб света
+    else if(k==='pillar'){   // ✨ v3: столп света — многослойный луч: основание-пятно + кольцо + линза-блик, сияние/тело/ядро, бегущие блики и восходящие искры; растёт из земли, утоньшается угасая
+      ctx.save(); ctx.globalCompositeOperation='lighter';
+      const lf=clamp(this.life/this.maxLife,0,1), grow=sSmooth(Math.min(1,(1-lf)*5)), seed=(this.x*0.07+this.y*0.13)%6.28;
+      const w=this.size*(0.62+0.38*lf)*(1+0.06*Math.sin((1-lf)*24+seed*3)), h=(140+this.size*1.6)*grow;
+      const bg=ctx.createRadialGradient(this.x,this.y,1,this.x,this.y,w*1.6);   // 1) основание: горячее пятно на земле
+      bg.addColorStop(0,'rgba(255,255,255,0.95)'); bg.addColorStop(0.35,this.color); bg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.globalAlpha=a*0.85; ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(this.x,this.y,w*1.6,w*0.55,0,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=a*0.7; ctx.strokeStyle=this.color; ctx.lineWidth=1.6;   //    расходящееся кольцо у подножия
+      ctx.beginPath(); ctx.ellipse(this.x,this.y,w*(1.0+0.9*(1-lf)),w*(0.36+0.3*(1-lf)),0,0,Math.PI*2); ctx.stroke();
+      ctx.globalAlpha=a*0.5*grow; ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.2;   //    горизонтальный линза-блик
+      ctx.beginPath(); ctx.moveTo(this.x-w*2.4,this.y); ctx.lineTo(this.x+w*2.4,this.y); ctx.stroke();
+      const beam=(bw,alpha,top,col)=>{ const g2=ctx.createLinearGradient(this.x,this.y-h,this.x,this.y);   // слой луча: трапеция, растворяется кверху
+        g2.addColorStop(0,'rgba(0,0,0,0)'); g2.addColorStop(top,col); g2.addColorStop(1,col);
+        ctx.globalAlpha=alpha; ctx.fillStyle=g2; ctx.beginPath();
+        ctx.moveTo(this.x-bw*0.55,this.y); ctx.lineTo(this.x-bw*0.16,this.y-h); ctx.lineTo(this.x+bw*0.16,this.y-h); ctx.lineTo(this.x+bw*0.55,this.y); ctx.closePath(); ctx.fill(); };
+      beam(w*1.9,a*0.30,0.75,this.color);   // 2) внешнее мягкое сияние
+      beam(w,a*0.85,0.55,this.color);       // 3) тело луча
+      beam(w*0.3,a*0.95,0.4,'#ffffff');     // 4) белое ядро
+      ctx.fillStyle='#ffffff';   // 5) бегущие вверх блики-срезы энергии
+      for(let i=0;i<2;i++){ const ph=((1-lf)*1.1+i*0.5+seed*0.1)%1, by=this.y-ph*h*0.92, bw2=w*(0.9-ph*0.45);
+        ctx.globalAlpha=a*0.4*(1-ph); ctx.fillRect(this.x-bw2*0.5,by-1.4,bw2,2.8); }
+      for(let i=0;i<3;i++){ const ph=((1-lf)*1.5+i/3+seed*0.16)%1, my=this.y-ph*h, mx=this.x+Math.sin(seed+i*2.1+ph*7)*w*0.55;   // 6) восходящие искры-мотыльки
+        ctx.globalAlpha=a*0.9*(1-ph)*grow; ctx.beginPath(); ctx.arc(mx,my,1.1+(1-ph)*1.5,0,Math.PI*2); ctx.fill(); }
+      ctx.restore(); }   // столп света v3
     else if(k==='arc'){ctx.strokeStyle=this.color;ctx.lineWidth=Math.max(1,5*(this.life/this.maxLife));ctx.beginPath();ctx.arc(this.x,this.y,this.size,this.a1||0,this.a2!=null?this.a2:Math.PI*2);ctx.stroke();}   // расходящееся полукольцо
     else if(k==='flash'){ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(this.x,this.y,1,this.x,this.y,this.size);g.addColorStop(0,'#ffffff');g.addColorStop(0.4,this.color);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fill();ctx.restore();}   // ядро взрыва
     else if(k==='scorch'){const g=ctx.createRadialGradient(this.x,this.y,1,this.x,this.y,this.size);g.addColorStop(0,'rgba(0,0,0,0.6)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(this.x,this.y,this.size,this.size*0.55,0,0,Math.PI*2);ctx.fill();}   // ✨ v2: тень-подпалина на земле (объём взрыва)
