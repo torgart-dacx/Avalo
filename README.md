@@ -2,7 +2,7 @@
 
 ### Действие-RPG в умирающем фэнтези-мире · один HTML-файл, без зависимостей
 
-**▶ Играть: <https://torgart-dacx.github.io/Avalo/>**
+**▶ Играть: <[https://torgart-dacx.github.io/Avalo/](https://torgart-dacx.github.io/Action_PRG_Avalo/)>**
 
 ---
 
